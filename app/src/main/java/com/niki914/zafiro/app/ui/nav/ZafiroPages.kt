@@ -143,6 +143,13 @@ data object HomePage : ZafiroPage {
     )
 }
 
+data object DeveloperWorkbenchPage : ZafiroPage {
+    override val routeKey = "developer-workbench"
+    override val titleSpec = ResTitle(R.string.workbench_title)
+    override val leftAction = TopBarActionSpec(Icons.AutoMirrored.Filled.ArrowBack)
+    override val rightAction: TopBarActionSpec? = null
+}
+
 data object ConversationHistoryPage : ZafiroPage {
     override val routeKey: String = "conversation-history"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.ui_conversation_history_title)

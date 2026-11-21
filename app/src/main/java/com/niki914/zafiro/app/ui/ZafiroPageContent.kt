@@ -7,7 +7,9 @@ import com.niki914.zafiro.app.ui.content.CustomPyToolsSettingsContent
 import com.niki914.zafiro.app.ui.model.StartupAssistantUi
 import com.niki914.zafiro.app.ui.nav.BuiltinToolGroupDetailPage
 import com.niki914.zafiro.app.ui.nav.ConfigurePage
+import com.niki914.zafiro.app.ui.devtools.DeveloperWorkbench
 import com.niki914.zafiro.app.ui.nav.ConversationHistoryPage
+import com.niki914.zafiro.app.ui.nav.DeveloperWorkbenchPage
 import com.niki914.zafiro.app.ui.nav.CustomPyToolDetailPage
 import com.niki914.zafiro.app.ui.nav.CustomPyToolsPage
 import com.niki914.zafiro.app.ui.nav.DonePage
@@ -116,6 +118,8 @@ fun ZafiroPageContent(
             onConversationSelectionConsumed = onConversationSelectionConsumed,
             onActiveConversationChanged = onActiveConversationChanged,
         )
+
+        DeveloperWorkbenchPage -> DeveloperWorkbench()
 
         ConversationHistoryPage -> ConversationHistoryPageRoute(
             activeConversationId = activeConversationId,

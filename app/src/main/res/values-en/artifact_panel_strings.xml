@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="artifact_panel_choose_base">Choose base APK / SO</string>
+    <string name="artifact_panel_choose_target">Choose target APK / SO</string>
+    <string name="artifact_panel_no_picker">No system file picker is available</string>
+    <string name="artifact_panel_reading">Reading static metadata…</string>
+    <string name="artifact_panel_unnamed">Unnamed document</string>
+    <string name="artifact_panel_format_error">Invalid or unsupported standalone APK / Android SO</string>
+    <string name="artifact_panel_limit_error">Read limit exceeded (256 MiB per APK, 32 MiB per SO; archive metadata and total expansion are also capped)</string>
+    <string name="artifact_panel_read_error">Read failed. Choose an accessible document.</string>
+    <string name="artifact_panel_package_changed">The APK package names differ</string>
+    <string name="artifact_panel_delta">Target − base: %1$s bytes</string>
+    <string name="artifact_panel_mismatch">Choose two files of the same type: APKs or SOs</string>
+    <string name="artifact_panel_permissions">Requested permissions</string>
+    <string name="artifact_panel_components">Components</string>
+    <string name="artifact_panel_abis">ABI</string>
+    <string name="artifact_panel_dependencies">Direct SO dependencies (DT_NEEDED)</string>
+    <string name="artifact_panel_library_dependency">%1$s → %2$s</string>
+    <string name="artifact_panel_apk_bytes">APK · %1$d bytes</string>
+    <string name="artifact_panel_so_bytes">SO · %1$d bytes</string>
+    <string name="artifact_panel_change_count">%1$d added, %2$d removed</string>
+    <string name="artifact_panel_added">+ %1$s</string>
+    <string name="artifact_panel_removed">− %1$s</string>
+    <string name="artifact_panel_activity">Activity: %1$s</string>
+    <string name="artifact_panel_service">Service: %1$s</string>
+    <string name="artifact_panel_receiver">Receiver: %1$s</string>
+    <string name="artifact_panel_provider">Provider: %1$s</string>
+</resources>

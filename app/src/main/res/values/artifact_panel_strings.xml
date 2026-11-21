@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="artifact_panel_choose_base">选择基准 APK / SO</string>
+    <string name="artifact_panel_choose_target">选择目标 APK / SO</string>
+    <string name="artifact_panel_no_picker">找不到系统文件选择器</string>
+    <string name="artifact_panel_reading">正在读取静态元数据…</string>
+    <string name="artifact_panel_unnamed">未命名文件</string>
+    <string name="artifact_panel_format_error">文件损坏，或不是受支持的独立 APK / Android SO</string>
+    <string name="artifact_panel_limit_error">超过读取上限（APK 256 MiB，单个 SO 32 MiB；归档元数据和解压总量也有限额）</string>
+    <string name="artifact_panel_read_error">读取失败，请重新选择可访问的文件</string>
+    <string name="artifact_panel_package_changed">两个 APK 的包名不同</string>
+    <string name="artifact_panel_delta">目标 − 基准：%1$s 字节</string>
+    <string name="artifact_panel_mismatch">请选择同类文件：两个 APK 或两个 SO</string>
+    <string name="artifact_panel_permissions">请求权限</string>
+    <string name="artifact_panel_components">组件</string>
+    <string name="artifact_panel_abis">ABI</string>
+    <string name="artifact_panel_dependencies">SO 直接依赖 (DT_NEEDED)</string>
+    <string name="artifact_panel_library_dependency">%1$s → %2$s</string>
+    <string name="artifact_panel_apk_bytes">APK · %1$d 字节</string>
+    <string name="artifact_panel_so_bytes">SO · %1$d 字节</string>
+    <string name="artifact_panel_change_count">新增 %1$d，移除 %2$d</string>
+    <string name="artifact_panel_added">+ %1$s</string>
+    <string name="artifact_panel_removed">− %1$s</string>
+    <string name="artifact_panel_activity">Activity：%1$s</string>
+    <string name="artifact_panel_service">Service：%1$s</string>
+    <string name="artifact_panel_receiver">Receiver：%1$s</string>
+    <string name="artifact_panel_provider">Provider：%1$s</string>
+</resources>

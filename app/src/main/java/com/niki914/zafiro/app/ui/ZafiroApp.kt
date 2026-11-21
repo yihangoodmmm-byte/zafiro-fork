@@ -70,6 +70,7 @@ import com.niki914.zafiro.app.ui.drawer.LocalDrawerController
 import com.niki914.zafiro.app.ui.drawer.NavigationDrawerOverlay
 import com.niki914.zafiro.app.ui.model.home.HomeStartRequests
 import com.niki914.zafiro.app.ui.nav.ConversationHistoryPage
+import com.niki914.zafiro.app.ui.nav.DeveloperWorkbenchPage
 import com.niki914.zafiro.app.ui.nav.HomePage
 import com.niki914.zafiro.app.ui.nav.SettingsHomePage
 import com.niki914.zafiro.app.ui.nav.NoTitle
@@ -470,6 +471,10 @@ fun ZafiroApp(
                             onOpenSettings = {
                                 isDrawerOpen = false
                                 push(SettingsHomePage)
+                            },
+                            onOpenDeveloperWorkbench = {
+                                isDrawerOpen = false
+                                push(DeveloperWorkbenchPage)
                             },
                         )
                     }
