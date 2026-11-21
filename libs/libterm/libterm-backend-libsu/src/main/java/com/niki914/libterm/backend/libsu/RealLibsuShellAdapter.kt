@@ -51,7 +51,7 @@ internal class RealLibsuShellAdapterFactory(
             }
         }
         try {
-            validateCwd(shell = shell, identity = identity, cwd = openOptions.cwd)
+            enterCwd(shell = shell, identity = identity, cwd = openOptions.cwd)
         } catch (error: Throwable) {
             runCatching { shell.close() }
             throw error
@@ -59,7 +59,7 @@ internal class RealLibsuShellAdapterFactory(
         return RealLibsuShellSession(identity, shell, ioDispatcher)
     }
 
-    private suspend fun validateCwd(
+    private suspend fun enterCwd(
         shell: Shell,
         identity: TerminalIdentity,
         cwd: String?,
@@ -71,7 +71,8 @@ internal class RealLibsuShellAdapterFactory(
         val stderr = mutableListOf<String>()
         val result = withContext(ioDispatcher) {
             shell.newJob()
-                .add("builtin cd -- ${cwd.toShellSingleQuoted()} && pwd -P")
+                // Use the same persistent shell and portable cd syntax (Android sh / mksh).
+                .add("cd -P ${cwd.toShellSingleQuoted()} && pwd -P")
                 .to(mutableListOf(), stderr)
                 .exec()
         }

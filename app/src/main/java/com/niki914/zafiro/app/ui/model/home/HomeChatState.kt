@@ -2,6 +2,8 @@ package com.niki914.zafiro.app.ui.model.home
 
 import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
+import com.niki914.zafiro.api.model.ChatReasoningEffort
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.app.conversation.ConversationRecord
 import com.niki914.zafiro.app.conversation.ConversationSummary
 import com.niki914.zafiro.app.conversation.ForkKind
@@ -9,6 +11,7 @@ import com.niki914.zafiro.app.conversation.ForkResult
 import com.niki914.zafiro.app.conversation.TurnBranchState
 import com.niki914.zafiro.app.ui.model.SavedConfigSummary
 import com.niki914.zafiro.chat.LlmErrorCode
+import com.niki914.zafiro.chat.agentic.WorkflowPlanReport
 
 internal interface HomeConversationStore {
     suspend fun lastOpenedConversationId(): String
@@ -17,6 +20,8 @@ internal interface HomeConversationStore {
     suspend fun getConversation(id: String): ConversationRecord?
     suspend fun draftText(): String
     suspend fun setDraftText(value: String)
+    suspend fun loadTurnOptions(): ChatTurnOptions = ChatTurnOptions()
+    suspend fun saveTurnOptions(options: ChatTurnOptions) {}
     suspend fun bindConfig(conversationId: String)
     suspend fun updateConfigId(conversationId: String, configId: String)
     suspend fun deleteConversation(id: String)
@@ -64,6 +69,7 @@ data class HomeToolStatus(
     val inputText: String? = null,
     /** 工具返回的图片引用（view_image / screenshot 等），path 指向 image_cache 落盘文件。 */
     val images: List<HomeChatImage> = emptyList(),
+    val workflowReport: WorkflowPlanReport? = null,
 )
 
 sealed interface HomeChatBlock {
@@ -162,6 +168,8 @@ data class HomeChatUiState(
      * 或模型未上报 usage），此时不画环。
      */
     val contextProgress: Float? = null,
+    val turnOptions: ChatTurnOptions = ChatTurnOptions(),
+    val isResolvingWorkspace: Boolean = false,
 ) {
     val displayConfig: SavedConfigSummary?
         get() {
@@ -207,6 +215,11 @@ sealed interface HomeChatIntent {
      */
     data class FileAttached(val uri: String) : HomeChatIntent
     data class FileRemoved(val id: String) : HomeChatIntent
+    data class WorkspaceSelected(val input: String) : HomeChatIntent
+    data object ClearWorkspace : HomeChatIntent
+    data object ToggleWorkflow : HomeChatIntent
+    data object ToggleReasoningGuide : HomeChatIntent
+    data class SelectReasoningEffort(val effort: ChatReasoningEffort?) : HomeChatIntent
 
     /**
      * 相机拍完（uri 是给相机写的 FileProvider 临时文件，path 是它在 cache 里的位置）。
@@ -242,6 +255,9 @@ sealed interface HomeChatIntent {
  */
 sealed interface HomeChatEffect {
     data class FileAttachFailed(val reason: FileAttachReason) : HomeChatEffect
+    data class WorkspaceFailed(val reason: FileAttachReason) : HomeChatEffect
+    data object WorkspaceBusy : HomeChatEffect
+    data object TurnOptionsSaveFailed : HomeChatEffect
     data object EmptyInputAttempted : HomeChatEffect
 }
 

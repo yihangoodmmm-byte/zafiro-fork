@@ -1,6 +1,7 @@
 package com.niki914.zafiro.app.ui.content
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +40,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -48,7 +51,10 @@ import com.niki914.uikit.infra.liquidScreenTopPadding
 import com.niki914.uikit.infra.scrollbar.LiquidOverscrollContainer
 import com.niki914.uikit.infra.scrollbar.LiquidOverscrollController
 import com.niki914.uikit.infra.scrollbar.rememberLiquidOverscrollController
+import com.niki914.zafiro.api.model.ChatReasoningEffort
+import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.api.util.tryIgnore
+import com.niki914.zafiro.app.R
 import com.niki914.zafiro.app.conversation.TurnBranchState
 import com.niki914.zafiro.app.ui.chat.composable.attachment.HomeChatAttachmentRow
 import com.niki914.zafiro.app.ui.chat.composable.bubble.UserBubblePosition
@@ -75,6 +81,8 @@ private const val ATTACH_LOG_TAG = "niki914_zafiro_Attach"
 
 /** 图片多选的张数上限。远低于系统的 getPickImagesMaxLimit()，取一个够用且不炸上下文的数。 */
 private const val PHOTO_PICK_MAX_ITEMS = 10
+
+private enum class ComposerPanel { Attachments, Workspace, TaskOptions }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -112,6 +120,11 @@ internal fun HomePageContentBody(
     onSwitchTurnBranch: (Long, Int) -> Unit = { _, _ -> },
     alwaysShowDetailed: Boolean = false,
     onToggleActionKey: (key: String, isExpanded: Boolean) -> Unit = { _, _ -> },
+    onWorkspaceSelected: (String) -> Unit = {},
+    onClearWorkspace: () -> Unit = {},
+    onToggleWorkflow: () -> Unit = {},
+    onToggleReasoningGuide: () -> Unit = {},
+    onSelectReasoningEffort: (ChatReasoningEffort?) -> Unit = {},
 ) {
     // 底部避让总高：composer 底距 + 实测高度 + 统一视觉间距。列表贴底留白与箭头
     // 位置同源；键盘关闭时（composerBottomPadding == composerGap）即为
@@ -120,10 +133,21 @@ internal fun HomePageContentBody(
     val density = LocalDensity.current
     val chatBackdrop = rememberLayerBackdrop()
 
-    // 附件入口：加号 → 选项单（Photos / Camera / File / Folder）。
     val context = LocalContext.current
-    var attachSheetVisible by remember { mutableStateOf(false) }
+    var panel by rememberSaveable { mutableStateOf<ComposerPanel?>(null) }
+    var workspacePathDialog by rememberSaveable { mutableStateOf(false) }
+    var workspaceDraft by rememberSaveable { mutableStateOf("") }
     var pendingCapture by remember { mutableStateOf<CameraTarget?>(null) }
+
+    fun openPanel(next: ComposerPanel) {
+        onContentTap()
+        panel = next
+    }
+
+    fun openWorkspacePathDialog() {
+        workspaceDraft = uiState.turnOptions.workspacePath.orEmpty()
+        workspacePathDialog = true
+    }
 
     // 系统图片选择器（photo picker，无权限）：可多选，选完逐张 ingest 落盘 → pendingImages
     val photoPicker = rememberLauncherForActivityResult(
@@ -149,6 +173,12 @@ internal fun HomePageContentBody(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
         uri?.let { onFileAttached(it.toString()) }
+    }
+    // Binding selects a native working directory; it must never create an attachment card.
+    val workspacePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        uri?.let { onWorkspaceSelected(it.toString()) }
     }
 
     // 系统相机：输出目标是我们自己 cache 里的临时文件（FileProvider uri）。
@@ -274,7 +304,13 @@ internal fun HomePageContentBody(
                 contextProgress = uiState.contextProgress,
                 pendingImages = pendingImages,
                 pendingFiles = pendingFiles,
-                onAttachImageClick = { attachSheetVisible = true },
+                onAttachImageClick = { openPanel(ComposerPanel.Attachments) },
+                workspacePath = uiState.turnOptions.workspacePath,
+                isResolvingWorkspace = uiState.isResolvingWorkspace,
+                onWorkspaceClick = { openPanel(ComposerPanel.Workspace) },
+                taskOptionsActive = uiState.turnOptions.workflowEnabled || uiState.turnOptions.reasoningGuideEnabled ||
+                    uiState.turnOptions.reasoningEffort != null,
+                onTaskOptionsClick = { openPanel(ComposerPanel.TaskOptions) },
                 backdrop = chatBackdrop,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -326,8 +362,8 @@ internal fun HomePageContentBody(
         }
 
         HomeAttachmentSheet(
-            visible = attachSheetVisible,
-            onDismissRequest = { attachSheetVisible = false },
+            visible = panel == ComposerPanel.Attachments,
+            onDismissRequest = { panel = null },
             onPhotosClick = {
                 photoPicker.launch(
                     PickVisualMediaRequest(
@@ -346,6 +382,44 @@ internal fun HomePageContentBody(
             },
             onFileClick = { filePicker.launch(arrayOf("*/*")) },
             onFolderClick = { folderPicker.launch(null) },
+        )
+        HomeWorkspaceSheet(
+            visible = panel == ComposerPanel.Workspace,
+            onDismissRequest = { panel = null },
+            path = uiState.turnOptions.workspacePath,
+            resolving = uiState.isResolvingWorkspace,
+            onPickDirectory = {
+                try {
+                    workspacePicker.launch(null)
+                } catch (_: ActivityNotFoundException) {
+                    openWorkspacePathDialog()
+                }
+            },
+            onEnterPath = ::openWorkspacePathDialog,
+            onClear = onClearWorkspace,
+        )
+        InputLiquidDialog(
+            visible = workspacePathDialog,
+            onDismissRequest = { workspacePathDialog = false },
+            title = stringResource(R.string.ui_home_workspace_enter_path),
+            value = workspaceDraft,
+            onValueChange = { workspaceDraft = it.take(4096) },
+            placeholder = "/sdcard/Projects/demo",
+            hint = stringResource(R.string.ui_home_workspace_path_hint),
+            positiveButtonText = stringResource(R.string.ui_home_workspace_bind),
+            positiveEnabled = WorkspaceDirectory.absolutePath(workspaceDraft) != null && !uiState.isResolvingWorkspace,
+            onPositiveClick = {
+                workspacePathDialog = false
+                onWorkspaceSelected(workspaceDraft)
+            },
+        )
+        HomeTaskOptionsSheet(
+            visible = panel == ComposerPanel.TaskOptions,
+            onDismissRequest = { panel = null },
+            options = uiState.turnOptions,
+            onToggleWorkflow = onToggleWorkflow,
+            onToggleReasoningGuide = onToggleReasoningGuide,
+            onSelectReasoningEffort = onSelectReasoningEffort,
         )
     }
 }

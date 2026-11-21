@@ -286,7 +286,7 @@ internal class RealOkia(
             tools = effectiveRegistry(cfg).snapshot().map { it.descriptor },
             supportsImages = cfg.supportsImages,
             imageLoader = cfg.imageLoader,
-            thinkingLevel = cfg.thinkingLevel
+            thinkingLevel = options?.thinkingLevel ?: cfg.thinkingLevel,
             // 工具描述快照（T9b G5 整改）：send 时快照仅为初始值；每段
             // buildRequest 前 RealAgentLoop 用 registry 现取覆盖（§8.18），
             // 请求体表达「每段发送时的工具集」。

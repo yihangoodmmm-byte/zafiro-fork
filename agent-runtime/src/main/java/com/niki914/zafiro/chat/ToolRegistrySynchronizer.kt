@@ -19,6 +19,7 @@ import com.niki914.zafiro.chat.agentic.LocalToolExecutor
 internal class ToolRegistrySynchronizer(
     private val tenantId: String = "",
     private val agentControlProvider: (() -> AgentControl?)? = null,
+    private val workspacePathProvider: () -> String? = { null },
     private val currentTools: () -> ResolvedTools?,
 ) {
     private companion object {
@@ -35,6 +36,7 @@ internal class ToolRegistrySynchronizer(
         onCustomPyToolWritten = { tool -> registerCustomPyToolNow(tool) },
         tenantId = tenantId,
         agentControlProvider = agentControlProvider,
+        workspacePathProvider = workspacePathProvider,
     )
 
     fun reset() {

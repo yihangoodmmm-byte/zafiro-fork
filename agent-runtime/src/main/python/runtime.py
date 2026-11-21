@@ -89,7 +89,7 @@ def _exec_result(status: str, file_path: str = "", inline_text: str = "") -> dic
     return {"status": status, "file_path": file_path, "inline_text": inline_text}
 
 
-def exec_code(code: str, timeout: float = 30.0) -> dict:
+def exec_code(code: str, timeout: float = 30.0, workspace_path: str | None = None) -> dict:
     """Execute Python code in a daemon thread with a timeout.
 
     stdout + stderr are streamed in full into a per-call file under
@@ -99,6 +99,7 @@ def exec_code(code: str, timeout: float = 30.0) -> dict:
     Args:
         code: Python source code to execute.
         timeout: Maximum seconds to wait (float, default 30.0).
+        workspace_path: Local directory exposed only in this call's namespace.
 
     Returns:
         dict: {"status", "file_path", "inline_text"}.
@@ -116,6 +117,18 @@ def exec_code(code: str, timeout: float = 30.0) -> dict:
         out_f = open(out_path, "w", encoding="utf-8")
         err_f = open(out_path, "a", encoding="utf-8")
     except OSError:
+        # If opening the second handle failed, discard the empty partial output.
+        if out_f is not None:
+            try:
+                out_f.close()
+            except OSError:
+                pass
+            out_f = None
+            try:
+                os.unlink(out_path)
+            except OSError:
+                pass
+        out_path = None
         # ponytail: 写盘失败降级 inline（1MB clip tail），目录不可写属极罕见；
         # 若降级也高频出现，应把输出改走 Binder 直接回传并砍掉文件链路
         inline_out = _InlineBuffer()
@@ -125,34 +138,36 @@ def exec_code(code: str, timeout: float = 30.0) -> dict:
         sys.stdout.bind(inline_out if inline_out is not None else out_f)
         sys.stderr.bind(inline_err if inline_err is not None else err_f)
         try:
-            exec(code, {"__builtins__": __builtins__})
+            # cwd and os.environ belong to the worker process, which serves concurrent calls.
+            # Pass the location as per-execution data instead of changing either global.
+            namespace = {"__builtins__": __builtins__, "ZAFIRO_WORKSPACE": workspace_path or None}
+            exec(code, namespace)
         except Exception as e:
             print(f"{type(e).__name__}: {e}", file=sys.stderr)
         finally:
+            sys.stdout.unbind()
+            sys.stderr.unbind()
+            # The exec thread owns these handles, including after the caller times out.
             for f in (out_f, err_f):
                 if f is not None:
                     try:
-                        f.flush()
-                    except Exception:
+                        f.close()
+                    except OSError:
                         pass
-            sys.stdout.unbind()
-            sys.stderr.unbind()
 
     t = threading.Thread(target=run)
     t.daemon = True
     t.start()
     t.join(timeout=timeout)
 
-    if out_f is not None:
-        # 不 close：worker 线程可能仍在写（超时场景），flush 即可，
-        # 文件随 worker 结束自然完整；残留由 cacheDir 兜底回收。
-        for f in (out_f, err_f):
-            try:
-                f.flush()
-            except Exception:
-                pass
-
     if t.is_alive():
+        # Expose partial output without closing a file the worker may still use.
+        for f in (out_f, err_f):
+            if f is not None:
+                try:
+                    f.flush()
+                except (OSError, ValueError):
+                    pass
         return _exec_result("timeout", file_path=out_path or "")
 
     if out_path is not None:

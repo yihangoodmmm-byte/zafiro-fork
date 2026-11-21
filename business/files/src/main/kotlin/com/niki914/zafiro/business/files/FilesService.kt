@@ -2,12 +2,15 @@ package com.niki914.zafiro.business.files
 
 import android.net.Uri
 import com.niki914.zafiro.api.model.FileRef
+import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.business.application.ApplicationService
 import com.niki914.zafiro.business.permission.Permission
 import com.niki914.zafiro.business.permission.PermissionManager
 import com.niki914.zafiro.business.permission.PermissionState
 import com.niki914.zafiro.service.requireService
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** [FilesService.attach] 的结果：四种，各自对应一句 toast。 */
 sealed interface FileAttachResult {
@@ -41,6 +44,9 @@ interface FilesService {
      * 挂起是必需的：跳设置页那条路要等用户回来。调用点不要用 `runBlocking` 包它。
      */
     suspend fun attach(uri: String): FileAttachResult
+
+    /** Bind a directory picked through SAF, or a user-entered absolute path. */
+    suspend fun bindWorkspace(input: String): FileAttachResult = FileAttachResult.Unresolvable
 }
 
 /**
@@ -72,6 +78,26 @@ class FilesServiceImpl : FilesService {
             FileReachability.Reachable -> FileAttachResult.Ok(file)
             FileReachability.Missing, FileReachability.PermissionDenied -> FileAttachResult.Unreadable
         }
+    }
+
+    override suspend fun bindWorkspace(input: String): FileAttachResult {
+        val selection = input.trim()
+        val fromPicker = selection.startsWith("content://")
+        val path = if (fromPicker) {
+            DocumentPathResolver.resolveWorkspaceTree(Uri.parse(selection))
+        } else {
+            WorkspaceDirectory.absolutePath(input)
+        } ?: return FileAttachResult.Unresolvable
+        // A SAF tree grant does not grant native path access to shell/Python. Use the
+        // existing storage permission path for shared storage, then probe the actual directory.
+        val sharedRoots = listOf("/sdcard", "/storage", "/mnt/media_rw", "/mnt/sdcard", "/mnt/user", "/mnt/runtime")
+        val onSharedStorage = fromPicker || sharedRoots.any { path == it || path.startsWith("$it/") }
+        if (onSharedStorage && !ensureStorageAccess() &&
+            permissions.status(Permission.STORAGE) != PermissionState.GRANTED
+        ) return FileAttachResult.NoPermission
+        val directory = withContext(Dispatchers.IO) { WorkspaceDirectory.resolve(path) }
+            ?: return FileAttachResult.Unreadable
+        return FileAttachResult.Ok(FileRef(directory))
     }
 
     /**

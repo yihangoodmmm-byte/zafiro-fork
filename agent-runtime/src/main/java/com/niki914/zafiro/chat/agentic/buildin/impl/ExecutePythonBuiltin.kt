@@ -39,6 +39,8 @@ Can drive Android system commands (am, pm, input) via os.popen or subprocess; pr
 
 State does not persist between calls: every run starts fresh — no variables, working directory, environment
 changes, open handles, or background tasks. Persist intentionally through files when needed.
+If a local workspace is bound, ZAFIRO_WORKSPACE gives its absolute path for this call; otherwise it is None.
+Resolve project paths against that value. It does not change the Python process working directory.
 
 Limits: timeout 30 s default, 120 s max. Output over 2000 lines / 50 KB is
 truncated; the full output is saved to a file whose absolute path is included

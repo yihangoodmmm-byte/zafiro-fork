@@ -1,6 +1,7 @@
 package com.niki914.okia
 
 import com.niki914.okia.loop.LoopOptions
+import com.niki914.okia.message.ThinkingLevel
 
 /**
  * 每次 send 的回合级参数，覆盖 config 一次。
@@ -11,5 +12,6 @@ data class TurnOptions(
     val model: String? = null,
     val temperature: Float? = null,
     val maxTokens: Int? = null,
-    val loopOptions: LoopOptions? = null
+    val loopOptions: LoopOptions? = null,
+    val thinkingLevel: ThinkingLevel? = null,
 )

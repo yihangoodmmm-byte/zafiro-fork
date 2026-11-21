@@ -1,16 +1,20 @@
 package com.niki914.zafiro.chat.agentic.buildin.impl
 
+import com.niki914.zafiro.chat.agentic.AgentTenantContext
 import com.niki914.zafiro.chat.agentic.ToolExecutionPreflight
 import com.niki914.zafiro.chat.agentic.shell.SessionRegistry
 import com.niki914.zafiro.chat.agentic.shell.SessionMeta
 import com.niki914.zafiro.chat.agentic.shell.TerminalOpenOutcome
 import com.niki914.zafiro.chat.agentic.shell.TerminalSessionPool
 import com.niki914.zafiro.chat.agentic.shell.TerminalToolResponse
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import kotlin.coroutines.coroutineContext
 
 /**
  * 本地持久化会话终端工具 (shell)。
@@ -22,11 +26,19 @@ open class ShellBuiltin(
 ) : BaseSessionBuiltin(preflight) {
 
     override val name: String = "shell"
+    private val sessionResolutionMutex = Mutex()
+
+    // The registry is process-wide. Bind aliases AND handles to both the agent and its project.
+    override suspend fun currentSessionScope(): String {
+        val context = coroutineContext[AgentTenantContext] ?: return sessionScope
+        return if (context.tenantId.isBlank() && context.workspacePath == null) sessionScope
+        else "$sessionScope:${context.tenantId}:${context.workspacePath.orEmpty()}"
+    }
 
     override val description: String =
         "Execute commands in a local Android shell environment with persistent session state. " +
                 "Working directory, exported environment variables, and shell history persist between calls.\n\n" +
-                "Default session: If 'session' and 'alias' are omitted, commands automatically run in a shared default session (alias='default').\n" +
+                "Default session: If 'session' and 'alias' are omitted, commands reuse the default session for this conversation and bound workspace.\n" +
                 "Custom session: Provide 'alias' to create or target an isolated session (e.g. alias='build_worker').\n" +
                 "Execution mode: By default, commands run synchronously and return upon completion. If execution exceeds 'timeout' seconds, it degrades to background execution (status='running', timed_out=true); use action='read' to poll output later.\n" +
                 "Identity: Choose 'user' (default local shell), 'root' (via su), or 'shizuku'. The identity is fixed when a session is created; passing it for an existing session reuses that session only if the identity matches, otherwise the call fails.\n\n" +
@@ -64,15 +76,26 @@ open class ShellBuiltin(
     }
 
     override suspend fun preflightPathAccess(command: String, args: BaseSessionArgs) {
-        preflight.ensurePathAccess(command + " " + (args as? ShellArgs)?.workdir.orEmpty())
+        val workdir = (args as? ShellArgs)?.workdir ?: coroutineContext[AgentTenantContext]?.workspacePath
+        preflight.ensurePathAccess(command + " " + workdir.orEmpty())
     }
 
-    override suspend fun resolveSessionTarget(args: BaseSessionArgs): SessionTarget {
+    override suspend fun resolveSessionTarget(args: BaseSessionArgs): SessionTarget =
+        sessionResolutionMutex.withLock { resolveLocalTarget(args) }
+
+    private suspend fun resolveLocalTarget(args: BaseSessionArgs): SessionTarget {
         val shellArgs = args as? ShellArgs
+        val requestedWorkdir = shellArgs?.workdir
+        if (requestedWorkdir != null && !requestedWorkdir.startsWith('/')) {
+            return SessionTarget.Error(TerminalToolResponse.invalidRequest("workdir must be an absolute path."))
+        }
+        val scope = currentSessionScope()
+        val workspace = coroutineContext[AgentTenantContext]?.workspacePath
+        val workdir = requestedWorkdir ?: workspace
         val explicitSession = args.session
         if (explicitSession != null) {
             // 只认本域句柄：池是进程共享的，回查池会把 ssh 会话交给本地 shell 工具执行
-            val resolved = sessionRegistry.resolveSessionId(explicitSession, sessionScope)
+            val resolved = sessionRegistry.resolveSessionId(explicitSession, scope)
                 ?: return SessionTarget.Error(
                     TerminalToolResponse.invalidRequest("Session '$explicitSession' not found.")
                 )
@@ -81,11 +104,9 @@ open class ShellBuiltin(
                 TerminalSessionPool.close(resolved)
                 return SessionTarget.Error(TerminalToolResponse.sessionGone(explicitSession))
             }
-            identityMismatchOrNull(
-                sessionRegistry.findById(resolved),
-                explicitSession,
-                shellArgs?.identity,
-            )?.let { return it }
+            val meta = sessionRegistry.findById(resolved)
+            identityMismatchOrNull(meta, explicitSession, shellArgs?.identity)?.let { return it }
+            workdirMismatchOrNull(meta, requestedWorkdir)?.let { return it }
             return SessionTarget.Resolved(resolved)
         }
 
@@ -93,10 +114,11 @@ open class ShellBuiltin(
         val identity = shellArgs?.identity ?: DEFAULT_IDENTITY
         val explicitAlias = args.alias
         if (explicitAlias != null) {
-            val existing = sessionRegistry.findByAlias(explicitAlias, sessionScope)
+            val existing = sessionRegistry.findByAlias(explicitAlias, scope)
             if (existing != null) {
                 if (isSessionAlive(existing.sessionId)) {
                     identityMismatchOrNull(existing, explicitAlias, shellArgs?.identity)?.let { return it }
+                    workdirMismatchOrNull(existing, requestedWorkdir)?.let { return it }
                     return SessionTarget.Resolved(existing.sessionId)
                 }
                 // 登记项是僵尸（会话被回收/池被清）：释放别名后走下方重新开辟，本地会话重建零成本
@@ -104,13 +126,13 @@ open class ShellBuiltin(
                 TerminalSessionPool.close(existing.sessionId)
             }
 
-            val workdir = shellArgs?.workdir
             return when (val outcome = openLocalSession(identity = identity, workdir = workdir)) {
                 is TerminalOpenOutcome.Success -> {
                     sessionRegistry.register(
                         sessionId = outcome.session,
                         alias = explicitAlias,
-                        metadata = mapOf(SessionRegistry.META_IDENTITY to identity),
+                        scope = scope,
+                        metadata = sessionMetadata(identity, workdir),
                     )
                     SessionTarget.Resolved(outcome.session)
                 }
@@ -130,7 +152,23 @@ open class ShellBuiltin(
             }
         }
 
-        return openDefaultSession(identity)
+        val defaultAlias = defaultAliasFor(identity)
+        // An explicit alternative directory must not take over the implicit workspace session.
+        val alias = if (requestedWorkdir == null || requestedWorkdir == workspace) defaultAlias
+        else "$defaultAlias:$requestedWorkdir"
+        return openDefaultSession(identity, workdir, alias, scope)
+    }
+
+    private fun sessionMetadata(identity: String, workdir: String?): Map<String, String> = buildMap {
+        put(SessionRegistry.META_IDENTITY, identity)
+        if (workdir != null) put(META_WORKDIR, workdir)
+    }
+
+    private fun workdirMismatchOrNull(meta: SessionMeta?, requested: String?): SessionTarget.Error? {
+        if (requested == null || meta?.metadata?.get(META_WORKDIR) == requested) return null
+        return SessionTarget.Error(TerminalToolResponse.invalidRequest(
+            "workdir is fixed when opening a shell session. Omit it to reuse the session, or use a new alias.",
+        ))
     }
 
     /**
@@ -154,23 +192,30 @@ open class ShellBuiltin(
      * 未指定 session / alias 时的会话：按身份分池，user 沿用 `default`，其余身份各用一个别名。
      * 这样 `identity=root` 真的会拿到 root shell，而不是静默复用 user 会话。
      */
-    private suspend fun openDefaultSession(identity: String): SessionTarget {
-        val alias = defaultAliasFor(identity)
-        val existing = sessionRegistry.findByAlias(alias, sessionScope)
+    private suspend fun openDefaultSession(
+        identity: String,
+        workdir: String?,
+        alias: String,
+        scope: String,
+    ): SessionTarget {
+        val existing = sessionRegistry.findByAlias(alias, scope)
         if (existing != null) {
             if (isSessionAlive(existing.sessionId)) {
+                identityMismatchOrNull(existing, alias, identity)?.let { return it }
+                workdirMismatchOrNull(existing, workdir)?.let { return it }
                 return SessionTarget.Resolved(existing.sessionId)
             }
             sessionRegistry.unregister(existing.sessionId)
             TerminalSessionPool.close(existing.sessionId)
         }
 
-        return when (val outcome = openLocalSession(identity = identity, workdir = null)) {
+        return when (val outcome = openLocalSession(identity = identity, workdir = workdir)) {
             is TerminalOpenOutcome.Success -> {
                 sessionRegistry.register(
                     sessionId = outcome.session,
                     alias = alias,
-                    metadata = mapOf(SessionRegistry.META_IDENTITY to identity),
+                    scope = scope,
+                    metadata = sessionMetadata(identity, workdir),
                 )
                 SessionTarget.Resolved(outcome.session)
             }
@@ -199,6 +244,7 @@ open class ShellBuiltin(
 
     companion object {
         private const val LOG_TAG = "niki914_zafiro_ShellBuiltin"
+        private const val META_WORKDIR = "initial_workdir"
         const val DEFAULT_ALIAS = "default"
         const val DEFAULT_IDENTITY = "user"
         private const val DEFAULT_TIMEOUT_SEC = 30L
@@ -230,7 +276,7 @@ open class ShellBuiltin(
                 },
                 "workdir": {
                   "type": "string",
-                  "description": "Working directory for session initialization (absolute path)."
+                  "description": "Initial working directory (absolute path). If omitted, a new session starts in the bound workspace when set. A running session keeps its own cwd."
                 },
                 "timeout": {
                   "type": "integer",

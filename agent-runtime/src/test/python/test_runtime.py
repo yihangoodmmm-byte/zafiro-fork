@@ -87,6 +87,20 @@ class ExecCodeTest(unittest.TestCase):
         self.assertNotIn("42", content)
         self.assertIn("NameError", content)
 
+    def test_bound_workspace_is_call_local_without_changing_cwd(self):
+        cwd = os.getcwd()
+        workspace = "/storage/emulated/0/team's project"
+        code = "import os; print(ZAFIRO_WORKSPACE); print(os.getcwd())"
+        bound = runtime.exec_code(code, workspace_path=workspace)
+        unbound = runtime.exec_code(code)
+        self.assertEqual("ok", bound["status"])
+        self.assertEqual("ok", unbound["status"])
+        with open(bound["file_path"], encoding="utf-8") as f:
+            self.assertEqual([workspace, cwd], f.read().splitlines())
+        with open(unbound["file_path"], encoding="utf-8") as f:
+            self.assertEqual(["None", cwd], f.read().splitlines())
+        self.assertEqual(cwd, os.getcwd())
+
     def test_stdout_restored_after_timeout(self):
         """stdout must point to the original stream even after timeout."""
         orig = sys.stdout
@@ -108,8 +122,8 @@ class ExecCodeTest(unittest.TestCase):
 
     def test_degraded_inline_when_write_fails(self):
         """cacheDir 不可写时降级 inline（尾部 1MB）。"""
-        cache = tempfile.mkdtemp(prefix="runtime_degraded_")
-        os.chmod(cache, 0o500)  # 不可写 → makedirs(py_output) 失败
+        fd, cache = tempfile.mkstemp(prefix="runtime_degraded_")
+        os.close(fd)  # 普通文件不能作为 py_output 的父目录，root CI 下也会触发失败。
         old = os.environ["ZAFIRO_CACHE_DIR"]
         try:
             os.environ["ZAFIRO_CACHE_DIR"] = cache
@@ -123,8 +137,7 @@ class ExecCodeTest(unittest.TestCase):
             self.assertIn("e1", result["inline_text"])
         finally:
             os.environ["ZAFIRO_CACHE_DIR"] = old
-            os.chmod(cache, 0o755)
-            shutil.rmtree(cache)
+            os.unlink(cache)
             importlib.reload(runtime)
 
     def test_concurrent_calls_write_separate_files(self):

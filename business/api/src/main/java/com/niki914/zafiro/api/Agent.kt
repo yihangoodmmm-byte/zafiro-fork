@@ -1,5 +1,6 @@
 package com.niki914.zafiro.api
 
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.ContextUsage
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
@@ -91,6 +92,9 @@ interface Agent : AgentControl {
      *   失败卡只承载引擎层错误。
      */
     fun stream(): TurnStart
+
+    /** UI task options apply only to this accepted turn; other entry points keep their defaults. */
+    fun stream(options: ChatTurnOptions): TurnStart = stream()
 
     /**
      * 载入一条已持久化的会话。

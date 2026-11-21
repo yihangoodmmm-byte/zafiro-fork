@@ -32,13 +32,16 @@ internal fun HomeChatTurn.toTurnUiModel(
     activeThinkingKey: String? = null,
 ): TurnUiModel {
     val sections = mutableListOf<TurnSection>()
+    val workflowReport = blocks.asReversed().firstNotNullOfOrNull {
+        (it as? HomeChatBlock.Tool)?.status?.workflowReport
+    }
     val currentTools = mutableListOf<ActionUiModel>()
     var toolRunIndex = 0
 
     fun hasSuccessor(index: Int): Boolean {
         for (i in (index + 1) until blocks.size) {
             when (val b = blocks[i]) {
-                is HomeChatBlock.Tool -> return true
+                is HomeChatBlock.Tool -> if (b.status.workflowReport == null) return true
                 is HomeChatBlock.Thinking -> return true
                 is HomeChatBlock.Error -> return true
                 is HomeChatBlock.Retrying -> return true
@@ -67,6 +70,7 @@ internal fun HomeChatTurn.toTurnUiModel(
     for ((blockIndex, block) in blocks.withIndex()) {
         when (block) {
             is HomeChatBlock.Tool -> {
+                if (block.status.workflowReport != null) continue
                 val actionKey = "${id}_tool_${block.status.callId ?: blockIndex}"
                 val isRunning = block.status.state == HomeToolState.Running
                 val bodyUi = block.status.toActionBodyUi(alwaysShowDetailed = alwaysShowDetailed)
@@ -204,6 +208,7 @@ internal fun HomeChatTurn.toTurnUiModel(
     flushTools()
 
     return TurnUiModel(
+        workflowReport = workflowReport,
         id = id,
         userText = userText,
         userImages = images,

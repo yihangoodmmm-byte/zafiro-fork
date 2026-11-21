@@ -1,5 +1,6 @@
 package com.niki914.zafiro.app.ui.model.home
 
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.app.conversation.ConversationRecord
 import com.niki914.zafiro.app.conversation.ConversationRepo
 import com.niki914.zafiro.app.conversation.ConversationSummary
@@ -24,6 +25,10 @@ object DefaultHomeConversationStore : HomeConversationStore {
     override suspend fun draftText(): String = XRepo.draftText()
 
     override suspend fun setDraftText(value: String) = XRepo.setDraftText(value)
+
+    override suspend fun loadTurnOptions(): ChatTurnOptions = XRepo.chatTurnOptions()
+
+    override suspend fun saveTurnOptions(options: ChatTurnOptions) = XRepo.setChatTurnOptions(options)
 
     override suspend fun bindConfig(conversationId: String) {
         val record = ConversationRepo.getConversation(conversationId) ?: return

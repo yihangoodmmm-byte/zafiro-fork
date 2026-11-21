@@ -13,6 +13,7 @@ import com.niki914.zafiro.api.model.AgentState
 import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
 import com.niki914.zafiro.api.model.Attachment
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.ContextUsage
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
@@ -243,6 +244,13 @@ internal class FakeHomeConversationStore(
     private val records = linkedMapOf<String, ConversationRecord>()
     private var lastOpened = ""
     private var draft = ""
+    var savedTurnOptions = ChatTurnOptions()
+
+    override suspend fun loadTurnOptions() = savedTurnOptions
+
+    override suspend fun saveTurnOptions(options: ChatTurnOptions) {
+        savedTurnOptions = options
+    }
 
     override suspend fun lastOpenedConversationId() = lastOpened
     override suspend fun setLastOpenedConversationId(value: String) {

@@ -20,6 +20,7 @@ import com.niki914.okia.message.AssistantMessage
 import com.niki914.okia.message.ContentBlock
 import com.niki914.okia.message.Message
 import com.niki914.okia.message.StopReason
+import com.niki914.okia.message.ThinkingLevel
 import com.niki914.okia.protocol.ProtocolCompatMapper
 import com.niki914.okia.protocol.ProtocolEvent
 import com.niki914.okia.transport.HttpEngine
@@ -510,6 +511,25 @@ class RealOkiaTest {
                 e
             }
         )
+    }
+
+    @Test
+    fun turnThinkingOverrideDoesNotChangeTheModelProfile() = runTest {
+        val received = mutableListOf<ThinkingLevel?>()
+        val loop = FakeAgentLoop { request, _ ->
+            received += request.snapshot.thinkingLevel
+            TurnResult.Completed(CompletionReason.Stop)
+        }
+        val okia = openOkia(
+            FakeProtocolMapper(emptyList<ProtocolEvent>()),
+            loop = loop,
+            scope = testScope(testScheduler),
+        ) { thinkingLevel = ThinkingLevel.LOW }
+        okia.send("override", options = TurnOptions(thinkingLevel = ThinkingLevel.HIGH)) { }
+        okia.send("inherit") { }
+        assertEquals(listOf(ThinkingLevel.HIGH, ThinkingLevel.LOW), received)
+        assertEquals(ThinkingLevel.LOW, okia.config().thinkingLevel)
+        okia.close()
     }
 
     @Test

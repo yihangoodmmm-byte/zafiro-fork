@@ -34,6 +34,16 @@ android {
     }
 
     signingConfigs {
+        // 固定 debug 签名：默认 debug keystore 由构建机现场生成，每次 CI 都不同，
+        // 导致「新包装不上旧包，必须卸载，数据全丢」。这里随仓库提交一份调试 keystore
+        // 并复用，口令是公开的 android/android，仅用于 debug 变体。
+        create("debugFixed") {
+            storeFile = rootProject.file("keystore/zafiro-debug.keystore")
+            storePassword = "android"
+            keyAlias = "zafiro-debug"
+            keyPassword = "android"
+        }
+
         create("release") {
             storeFile = file(project.property("RELEASE_STORE_FILE") as String)
             storePassword = project.property("RELEASE_STORE_PASSWORD") as String
@@ -54,6 +64,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debugFixed")
             ndk {
                 abiFilters += "x86_64"   // 模拟器调试
             }

@@ -1,6 +1,7 @@
 // 保护：ShellBuiltin 的默认持久会话复用、显式别名环境隔离、Preflight规则拦截与多身份回执自证
 package com.niki914.zafiro.chat
 
+import com.niki914.zafiro.chat.agentic.AgentTenantContext
 import com.niki914.zafiro.chat.agentic.ToolExecutionPreflight
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.zafiro.chat.agentic.buildin.impl.BaseSessionBuiltin
@@ -13,6 +14,7 @@ import com.niki914.zafiro.settings.model.RuntimeExecutionRule
 import com.niki914.zafiro.settings.model.RuntimeExecutionRuleEnabledMode
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -49,6 +51,7 @@ class ShellBuiltinTest {
         private val sessionCounter = AtomicInteger(1)
         val sessionBuffers = ConcurrentHashMap<String, StringBuilder>()
         val openedIdentities = mutableListOf<String>()
+        val openedWorkdirs = mutableListOf<String?>()
 
         var sessionsAlive: Boolean = true
 
@@ -60,6 +63,7 @@ class ShellBuiltinTest {
         ): TerminalOpenOutcome {
             val handle = "shell_session_${sessionCounter.getAndIncrement()}"
             openedIdentities.add(identity)
+            openedWorkdirs.add(workdir)
             return TerminalOpenOutcome.Success(
                 session = handle,
                 identity = identity,
@@ -112,6 +116,22 @@ class ShellBuiltinTest {
 
         assertEquals(sessId1, sessId2)
         assertEquals("default", json2["alias"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun defaultSessionUsesBoundWorkspaceAndDoesNotReuseAnotherWorkspacesSession() = runTest {
+        val tool = TestShellBuiltin()
+        val request = BuiltinToolRequest(name = "shell", argumentsJson = """{"command":"pwd"}""")
+        suspend fun sessionFor(workspace: String?): String = withContext(
+            AgentTenantContext(tenantId = "test-agent", workspacePath = workspace),
+        ) {
+            Json.parseToJsonElement(tool.invokeRawJson(request)).jsonObject.getValue("session_id").jsonPrimitive.content
+        }
+        val first = sessionFor("/storage/emulated/0/project a")
+        assertEquals(first, sessionFor("/storage/emulated/0/project a"))
+        assertNotEquals(first, sessionFor("/storage/emulated/0/project b"))
+        assertNotEquals(first, sessionFor(null))
+        assertEquals(listOf("/storage/emulated/0/project a", "/storage/emulated/0/project b", null), tool.openedWorkdirs)
     }
 
     // ── 2. 显式 alias 开辟独立隔离会话 ───────────────────────────────────────

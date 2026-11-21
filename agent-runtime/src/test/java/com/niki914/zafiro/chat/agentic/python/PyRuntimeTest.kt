@@ -1,12 +1,15 @@
 package com.niki914.zafiro.chat.agentic.python
 
 import android.os.IBinder
+import com.niki914.zafiro.chat.agentic.AgentTenantContext
 import com.niki914.zafiro.chat.util.SilentLoggerRule
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -30,9 +33,11 @@ class PyRuntimeTest {
         var killed = false
         var killCount = 0
         var execCalls = 0
+        var lastWorkspace: String? = null
 
-        override fun exec(code: String?, timeoutMs: Long): PyExecResult {
+        override fun exec(code: String?, timeoutMs: Long, workspacePath: String?): PyExecResult {
             execCalls++
+            lastWorkspace = workspacePath
             if (execBlockMs > 0) Thread.sleep(execBlockMs)
             return execResult
         }
@@ -64,6 +69,18 @@ class PyRuntimeTest {
         assertEquals("ok", result.output)
         assertEquals(1, fake.execCalls)
         assertFalse(fake.killed)
+    }
+
+    @Test
+    fun `bound workspace is forwarded per execution without leaking to the next call`() = runBlocking {
+        val fake = FakeWorker().also { PyRuntime.testService = it }
+        val path = "/storage/emulated/0/workspace with spaces"
+        withContext(AgentTenantContext(tenantId = "test", workspacePath = path)) {
+            PyRuntime.exec("print(ZAFIRO_WORKSPACE)", 30_000L)
+        }
+        assertEquals(path, fake.lastWorkspace)
+        PyRuntime.exec("print(ZAFIRO_WORKSPACE)", 30_000L)
+        assertNull(fake.lastWorkspace)
     }
 
     @Test

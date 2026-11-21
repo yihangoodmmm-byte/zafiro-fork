@@ -52,6 +52,8 @@ abstract class BaseSessionBuiltin(
     /** 别名域，本地 shell 与 ssh 各自一套命名空间，避免别名跨工具解析到对方的会话。 */
     protected open val sessionScope: String get() = SessionRegistry.SCOPE_LOCAL
 
+    protected open suspend fun currentSessionScope(): String = sessionScope
+
     /** 卡死命令的脱困指引，按是否有 PTY 分流（写入超时/忙拒绝/后台受理三处共用）。 */
     protected val abandonHint: String
         get() = if (supportsCtrlCAbort) {
@@ -129,7 +131,7 @@ abstract class BaseSessionBuiltin(
     protected open suspend fun resolveTargetSessionId(explicitTarget: String?): String? {
         val trimmed = explicitTarget?.trim()?.takeIf(String::isNotBlank)
         if (trimmed != null) {
-            return sessionRegistry.resolveSessionId(trimmed, sessionScope) ?: trimmed
+            return sessionRegistry.resolveSessionId(trimmed, currentSessionScope()) ?: trimmed
         }
         return onDefaultSession()
     }
@@ -405,11 +407,12 @@ abstract class BaseSessionBuiltin(
         }
     }
 
-    protected open fun handleList(): String {
+    protected open suspend fun handleList(): String {
         // 只报本域、且真的还活着的会话：跨域句柄会诱使模型把它交给另一个工具执行，
         // 已断连的死会话列出来则是谎报健康（模型会拿它去发命令，只能拿到 gone）
+        val scope = currentSessionScope()
         val sessions = sessionRegistry.all()
-            .filter { it.scope == sessionScope && isSessionAlive(it.sessionId) }
+            .filter { it.scope == scope && isSessionAlive(it.sessionId) }
         val items = sessions.map { entry ->
             val payload = linkedMapOf<String, JsonElement>(
                 "session_id" to JsonPrimitive(entry.sessionId),

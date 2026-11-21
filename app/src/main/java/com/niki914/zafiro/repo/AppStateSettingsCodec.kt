@@ -80,6 +80,14 @@ internal data class AppStateSettings(
     /** 全局输入框草稿文本（跨会话/新建会话保持，冷启动自动恢复）。 */
     @SerialName("draft_text")
     val draftText: String = "",
+    @SerialName("chat_workspace_path")
+    val chatWorkspacePath: String = "",
+    @SerialName("chat_workflow_enabled")
+    val chatWorkflowEnabled: Boolean = false,
+    @SerialName("chat_reasoning_guide_enabled")
+    val chatReasoningGuideEnabled: Boolean = false,
+    @SerialName("chat_reasoning_effort")
+    val chatReasoningEffort: String = "",
 )
 
 /** 一条置顶记录：置顶时刻用于与最后交互时间取 max 排序（越晚置顶/越晚交互越靠前）。 */

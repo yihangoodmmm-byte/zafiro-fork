@@ -15,6 +15,7 @@ import kotlin.coroutines.coroutineContext
 class AgentTenantContext(
     val tenantId: String,
     val agentControl: AgentControl? = null,
+    val workspacePath: String? = null,
 ) : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<AgentTenantContext>
 }

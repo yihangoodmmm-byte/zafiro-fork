@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.niki914.zafiro.app.ui.chat.composable.section.SectionList
+import com.niki914.zafiro.app.ui.chat.composable.section.WorkflowReportCard
 import com.niki914.zafiro.app.ui.chat.model.TurnSection
 import com.niki914.zafiro.app.ui.chat.model.TurnUiModel
 import com.niki914.zafiro.app.ui.chat.composable.action.TurnActionRow
@@ -25,6 +26,7 @@ import com.niki914.zafiro.app.ui.chat.composable.attachment.HomeChatAttachmentRo
 import com.niki914.zafiro.app.ui.chat.composable.bubble.UserBubbleCornerRadius
 import com.niki914.zafiro.app.ui.chat.composable.bubble.UserBubblePosition
 import com.niki914.zafiro.app.ui.chat.composable.bubble.UserMessageBubble
+import com.niki914.zafiro.app.ui.chat.composable.spacing.AssistantSectionSpacing
 import com.niki914.zafiro.app.ui.chat.composable.spacing.AssistantToActionSpacing
 import com.niki914.zafiro.app.ui.chat.composable.spacing.UserAttachmentToTextSpacing
 import com.niki914.zafiro.app.ui.chat.composable.spacing.UserBubbleToActionSpacing
@@ -62,6 +64,7 @@ internal fun TurnItem(
     branchCount: Int = 1,
     onSwitchBranch: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
+    isTurnActive: Boolean = false,
 ) {
     val alwaysVisible = actionsDisplay == MessageActionsDisplay.Always
 
@@ -126,11 +129,15 @@ internal fun TurnItem(
         }
 
         // ── 2. 助手生成流 ──
-        if (turn.sections.isNotEmpty()) {
+        if (turn.sections.isNotEmpty() || turn.workflowReport != null) {
             UserToAssistantSpacing()
             Column(
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                turn.workflowReport?.let { report ->
+                    WorkflowReportCard(report = report, active = isTurnActive)
+                    if (turn.sections.isNotEmpty()) AssistantSectionSpacing()
+                }
                 SectionList(
                     sections = turn.sections,
                     onContentTap = {

@@ -118,6 +118,7 @@ internal fun HomeChatTurnItem(
         onRewind = { guardedRewind(turn.id) },
         branchIndex = branchIndex,
         branchCount = branchCount,
+        isTurnActive = isLastTurn && isGenerating,
         onSwitchBranch = onSwitchBranch,
         modifier = modifier,
     )

@@ -96,6 +96,24 @@ fun HomePageContent(
                     Toast.LENGTH_SHORT,
                 ).show()
 
+                is HomeChatEffect.WorkspaceFailed -> Toast.makeText(
+                    attachToastContext,
+                    when (effect.reason) {
+                        FileAttachReason.Unresolvable -> R.string.ui_home_workspace_invalid
+                        FileAttachReason.NoPermission -> R.string.ui_home_attach_no_permission
+                        FileAttachReason.Unreadable -> R.string.ui_home_workspace_unavailable
+                    },
+                    Toast.LENGTH_LONG,
+                ).show()
+
+                HomeChatEffect.WorkspaceBusy -> Toast.makeText(
+                    attachToastContext, R.string.ui_home_workspace_busy, Toast.LENGTH_SHORT,
+                ).show()
+
+                HomeChatEffect.TurnOptionsSaveFailed -> Toast.makeText(
+                    attachToastContext, R.string.ui_home_task_options_save_failed, Toast.LENGTH_SHORT,
+                ).show()
+
                 HomeChatEffect.EmptyInputAttempted -> Toast.makeText(
                     attachToastContext,
                     R.string.ui_toast_empty_input,
@@ -139,8 +157,8 @@ fun HomePageContent(
     // 额外空间全部由 composerBottomPadding 提供，箭头/消息的呼吸空间保持固定
     val composerGap = navigationBottom + 20.dp
     val composerBottomPadding = (effectiveImeBottom + 12.dp).coerceAtLeast(composerGap)
-    // composer 实测高度（默认 68dp = LiquidChatComposer 的 minHeight），首帧布局后回填
-    val composerHeight = remember { mutableStateOf(68.dp) }
+    // 首帧按双行输入区预留空间，后续跟随实测高度。
+    val composerHeight = remember { mutableStateOf(100.dp) }
     val bottomThresholdPx = with(density) { 24.dp.roundToPx() }
     val lastTurn = uiState.turns.lastOrNull()
     // 贴底由「滚动位置 + contentPadding」共同决定：composer 几何（ime 动画、多行输入
@@ -350,6 +368,11 @@ fun HomePageContent(
         onRemoveFile = { id ->
             viewModel.sendIntent(HomeChatIntent.FileRemoved(id))
         },
+        onWorkspaceSelected = { viewModel.sendIntent(HomeChatIntent.WorkspaceSelected(it)) },
+        onClearWorkspace = { viewModel.sendIntent(HomeChatIntent.ClearWorkspace) },
+        onToggleWorkflow = { viewModel.sendIntent(HomeChatIntent.ToggleWorkflow) },
+        onToggleReasoningGuide = { viewModel.sendIntent(HomeChatIntent.ToggleReasoningGuide) },
+        onSelectReasoningEffort = { viewModel.sendIntent(HomeChatIntent.SelectReasoningEffort(it)) },
         onComposerFocusChanged = { focused ->
             isComposerFocused = focused
         },

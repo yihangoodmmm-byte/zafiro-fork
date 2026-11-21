@@ -4,6 +4,8 @@ import android.content.Context
 import com.niki914.logging.Logger
 import com.niki914.store.StoreDescriptorRegistry
 import com.niki914.xposed.api.util.ContextProvider
+import com.niki914.zafiro.api.model.ChatReasoningEffort
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.app.R
 import com.niki914.zafiro.chat.agentic.ToolExecutionPreflight
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRegistry
@@ -391,6 +393,30 @@ object XRepo {
     suspend fun draftText(): String = draftTextField.get()
 
     suspend fun setDraftText(text: String) = draftTextField.set(text)
+
+    private val chatTurnOptionsField = PlainAppStateField(
+        select = {
+            ChatTurnOptions(
+                workspacePath = chatWorkspacePath.takeUnless(String::isBlank),
+                workflowEnabled = chatWorkflowEnabled,
+                reasoningGuideEnabled = chatReasoningGuideEnabled,
+                reasoningEffort = ChatReasoningEffort.fromWire(chatReasoningEffort),
+            )
+        },
+        update = {
+            copy(
+                chatWorkspacePath = it.workspacePath.orEmpty(),
+                chatWorkflowEnabled = it.workflowEnabled,
+                chatReasoningGuideEnabled = it.reasoningGuideEnabled,
+                chatReasoningEffort = it.reasoningEffort?.wireValue.orEmpty(),
+            )
+        },
+    )
+
+    internal suspend fun chatTurnOptions() = chatTurnOptionsField.get()
+
+    internal suspend fun setChatTurnOptions(options: ChatTurnOptions) =
+        chatTurnOptionsField.set(options)
 
     /** Keep Alive 设置的进程内热更新通道：读时回填初值，写时同步。 */
     private val keepScreenOnField = ReactiveAppStateField(

@@ -7,6 +7,7 @@ import com.niki914.okia.event.TurnEvent
 import com.niki914.okia.loop.TurnResult
 import com.niki914.okia.message.AssistantMessage
 import com.niki914.okia.message.ContentBlock
+import com.niki914.okia.message.ThinkingLevel
 import com.niki914.xposed.api.util.LockState
 import com.niki914.zafiro.chat.agentic.accessibility.AccessibilityController
 import com.niki914.zafiro.chat.agentic.stream.LlmStreamEventMapper
@@ -47,6 +48,7 @@ internal class LlmStreamPipeline {
         images: List<ContentBlock.Image>,
         systemPrompt: String,
         channel: SendChannel<LlmStreamEvent>,
+        thinkingLevel: ThinkingLevel? = null,
     ) {
         turnActiveFlow.value = true
         val startedAtMs = System.currentTimeMillis()
@@ -71,7 +73,7 @@ internal class LlmStreamPipeline {
                 session.send(
                     text = query,
                     images = images,
-                    options = TurnOptions(systemPrompt = systemPrompt),
+                    options = TurnOptions(systemPrompt = systemPrompt, thinkingLevel = thinkingLevel),
                 ) { event ->
                     val mapped = LlmStreamEventMapper.map(event, startedAtMs)
                     if (event is TurnEvent.TurnCompleted) {

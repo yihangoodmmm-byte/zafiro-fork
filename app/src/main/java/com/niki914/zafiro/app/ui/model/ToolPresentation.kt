@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.niki914.zafiro.api.util.tryOrNull
 import com.niki914.zafiro.app.R
+import com.niki914.zafiro.chat.agentic.WorkflowPlanReport
 import com.niki914.zafiro.app.ui.model.ToolPresentation.inputOf
 import com.niki914.zafiro.app.ui.model.ToolPresentation.previewOf
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -78,6 +79,7 @@ object ToolPresentation {
         "screenshot" -> R.string.ui_tool_display_screenshot
         "view_image" -> R.string.ui_tool_display_view_image
         "py_meta_tools" -> R.string.ui_tool_display_py_meta_tools
+        WorkflowPlanReport.TOOL_NAME -> R.string.ui_home_workflow_toggle
         else -> null
     }
 

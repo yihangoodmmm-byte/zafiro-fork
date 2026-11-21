@@ -11,6 +11,7 @@ import com.niki914.zafiro.api.model.AgentState
 import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
 import com.niki914.zafiro.api.model.Attachment
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.ContextUsage
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
@@ -143,7 +144,9 @@ class AgentImpl(
         }
     }
 
-    override fun stream(): TurnStart {
+    override fun stream(): TurnStart = stream(ChatTurnOptions())
+
+    override fun stream(options: ChatTurnOptions): TurnStart {
         val draft = draftFlow.value
         if (draft.text.isBlank() && draft.images.isEmpty() && draft.files.isEmpty()) {
             return TurnStart.DraftEmpty
@@ -215,7 +218,7 @@ class AgentImpl(
                         LOG_TAG,
                         "round started conversationId=${conversationId.value} queryLength=${query.length}"
                     )
-                    engine.stream(query = query, images = contentImages, files = files)
+                    engine.stream(query = query, images = contentImages, files = files, options = options)
                         .collect { event ->
                             fold(event)
                         }

@@ -11,12 +11,17 @@ import com.niki914.okia.message.ThinkingLevel
 import com.niki914.okia.message.contextTokens
 import com.niki914.okia.tooling.ToolRegistry
 import com.niki914.zafiro.api.AgentControl
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.FileRef
+import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.chat.compaction.Compactor
+import com.niki914.zafiro.chat.agentic.ChatTurnPrompt
 import com.niki914.zafiro.chat.agentic.IngestedImage
-import com.niki914.zafiro.chat.agentic.PromptComposer
-import com.niki914.zafiro.chat.agentic.PromptComposerInput
+import com.niki914.zafiro.chat.prompt.PromptComposeContext
+import com.niki914.zafiro.chat.prompt.PromptComposer
+import com.niki914.zafiro.chat.prompt.PromptSkill
 import com.niki914.zafiro.chat.agentic.ToolManager
+import com.niki914.zafiro.chat.agentic.WorkflowPlanTool
 import com.niki914.zafiro.chat.agentic.shell.TerminalSessionPool
 import com.niki914.zafiro.settings.RuntimeEnvironment
 import com.niki914.zafiro.settings.model.DEFAULT_CONTEXT_WINDOW_TOKENS
@@ -64,11 +69,18 @@ class AgentSessionEngine {
     var agentControlProvider: (() -> AgentControl?)? = null
 
     private var runtimeState: RuntimeState? = null
+    private val executionMutex = Mutex()
+
+    // Okia runs tools in its own coroutine scope. Pass the accepted turn's path through the
+    // per-engine executor, rather than relying on coroutine context from the caller of send().
+    @Volatile
+    private var activeWorkspacePath: String? = null
 
     private val imageManager = ImageIngestionManager()
     private val toolSynchronizer = ToolRegistrySynchronizer(
         tenantId = tenantId,
         agentControlProvider = { agentControlProvider?.invoke() },
+        workspacePathProvider = { activeWorkspacePath },
     ) { runtimeState?.snapshot?.tools }
     private val prefixComposer = TurnPrefixComposer()
     internal val sessionAssembler = OkiaSessionAssembler(
@@ -78,7 +90,7 @@ class AgentSessionEngine {
     )
     internal val streamPipeline = LlmStreamPipeline()
 
-    private val promptComposer = PromptComposer()
+    // PromptComposer 现在是 object（分层组装器），不再持有实例
     private val toolManager = ToolManager()
     private val mcpRefreshScheduler =
         McpRefreshScheduler(CoroutineScope(SupervisorJob() + Dispatchers.IO))
@@ -239,17 +251,32 @@ class AgentSessionEngine {
             mcpSignature,
             force = activeSession !== previousSession || restore != null,
         )
-        val prompt = promptComposer.compose(
-            PromptComposerInput(
-                additionalInstructions = llmConfig.prompt,
-                memoryItems = PromptComposer.buildMemoryItems(llmConfig),
-                tools = resolvedTools,
-                enabledSkills = enabledSkills,
-                sandboxPaths = imageManager.sandboxPaths(),
+        // 分层提示词组装（Operit fork 同款引擎）：
+        // 身份是替换不是拼接——人格非空时内置默认身份完全不出现；
+        // 内置段各自有独立开关，由层配置控制。
+        val prompt = PromptComposer.compose(
+            PromptComposeContext(
+                useEnglish = !java.util.Locale.getDefault().language.startsWith("zh"),
+                userPersona = llmConfig.prompt,
+                builtinTools = resolvedTools.builtinTools.map { it.name },
+                customPyTools = resolvedTools.customPyTools.map { it.name },
+                mcpServers = resolvedTools.mcpServers.map { it.name },
+                skills = enabledSkills.map { skill ->
+                    PromptSkill(
+                        id = skill.id,
+                        name = skill.name,
+                        description = skill.description,
+                        absoluteDir = skill.absoluteDir,
+                    )
+                },
+                // 工作区不在这里注入：你的 ChatTurnPrompt 已按轮把 workspacePath 写进提示词，
+                // 这里只放应用私有目录。
+                sandboxPaths = imageManager.sandboxPaths().toList(),
+                memoryItems = buildMemoryItems(llmConfig),
             )
         )
         val finalConfig =
-            configWithoutRuntimePrompt.copy(finalSystemPrompt = prompt.finalSystemPrompt)
+            configWithoutRuntimePrompt.copy(finalSystemPrompt = prompt.finalPrompt)
 
         return@withLock LlmRuntimeSnapshot(finalConfig, resolvedTools, prompt).also { snapshot ->
             runtimeState = RuntimeState(
@@ -300,8 +327,19 @@ class AgentSessionEngine {
         query: String,
         images: List<ContentBlock.Image> = emptyList(),
         files: List<FileRef> = emptyList(),
+        options: ChatTurnOptions = ChatTurnOptions(),
     ): Flow<LlmStreamEvent> = channelFlow {
+        if (!executionMutex.tryLock()) {
+            send(LlmStreamEvent.Error(message = "A turn is already running.", code = LlmErrorCode.TurnConflict))
+            return@channelFlow
+        }
         try {
+            val workspace = options.workspacePath?.let { path ->
+                WorkspaceDirectory.resolve(path) ?: run {
+                    send(LlmStreamEvent.Error(message = "The bound workspace is unavailable. Rebind it in chat options."))
+                    return@channelFlow
+                }
+            }
             val state = try {
                 refresh()
                 runtimeState
@@ -365,13 +403,31 @@ class AgentSessionEngine {
                 contextWindow = contextWindow,
             )
 
-            streamPipeline.execute(
-                session = state.okia,
-                query = effectiveQuery,
-                images = images,
-                systemPrompt = state.snapshot.config.finalSystemPrompt,
-                channel = this,
-            )
+            activeWorkspacePath = workspace
+            val planDescriptor = WorkflowPlanTool.descriptor
+            val plan = if (options.workflowEnabled && toolRegistry.find(planDescriptor.wireName) == null) {
+                WorkflowPlanTool().also { toolRegistry.register(planDescriptor, it) }
+            } else {
+                null
+            }
+            try {
+                streamPipeline.execute(
+                    session = state.okia,
+                    query = effectiveQuery,
+                    images = images,
+                    systemPrompt = ChatTurnPrompt.compose(
+                        base = state.snapshot.config.finalSystemPrompt,
+                        options = options.copy(workspacePath = workspace),
+                        planToolName = planDescriptor.wireName.takeIf { plan != null },
+                    ),
+                    thinkingLevel = options.reasoningEffort?.let { ThinkingLevel.fromWire(it.wireValue) },
+                    channel = this,
+                )
+            } finally {
+                if (plan != null && toolRegistry.find(planDescriptor.wireName)?.executor === plan) {
+                    toolRegistry.remove(planDescriptor.wireName)
+                }
+            }
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 throw throwable
@@ -389,6 +445,9 @@ class AgentSessionEngine {
                     code = throwable.toUserErrorCode(),
                 )
             )
+        } finally {
+            activeWorkspacePath = null
+            executionMutex.unlock()
         }
     }.flowOn(Dispatchers.IO)
 
@@ -468,4 +527,15 @@ class AgentSessionEngine {
         val okia: Okia,
         val sessionProtocol: LlmProtocol?,
     )
+}
+
+/**
+ * 记忆层条目。memories 有内容时优先，否则退回 memoryPrompt。
+ * 逻辑原先挂在旧 PromptComposer 的 companion 上；换成分层引擎后引擎只负责渲染，
+ * 取数留在宿主侧——引擎不读偏好、不读文件。
+ */
+private fun buildMemoryItems(config: RuntimeLlmConfig): List<String> {
+    val memories = config.memories.map(String::trim).filter(String::isNotBlank)
+    if (memories.isNotEmpty()) return memories
+    return listOfNotNull(config.memoryPrompt.trim().takeIf { it.isNotBlank() })
 }

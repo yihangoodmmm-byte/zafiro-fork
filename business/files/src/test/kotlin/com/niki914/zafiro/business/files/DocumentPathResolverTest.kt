@@ -75,6 +75,20 @@ class DocumentPathResolverTest {
     }
 
     @Test
+    fun `workspace picker maps local documents downloads and removable storage`() {
+        val external = "com.android.externalstorage.documents"
+        val downloads = "com.android.providers.downloads.documents"
+        assertEquals("$root/Documents/project with spaces", DocumentPathResolver.workspaceTreePath(external, "home:project with spaces", root))
+        assertEquals("$root/project", DocumentPathResolver.workspaceTreePath(external, "primary:project", root))
+        assertEquals("/storage/1A2B-3C4D/project", DocumentPathResolver.workspaceTreePath(external, "1A2B-3C4D:project", root))
+        assertEquals("$root/Download", DocumentPathResolver.workspaceTreePath(downloads, "downloads", root))
+        assertEquals("$root/Download/project", DocumentPathResolver.workspaceTreePath(downloads, "raw:$root/Download/project", root))
+        assertNull(DocumentPathResolver.workspaceTreePath(downloads, "msf:123", root))
+        assertNull(DocumentPathResolver.workspaceTreePath("example.cloud", "primary:project", root))
+        assertNull(DocumentPathResolver.workspaceTreePath(external, "home:project/../elsewhere", root))
+    }
+
+    @Test
     fun `docId without a volume separator is rejected`() {
         assertNull(doc("nocolon"))
         assertNull(doc(""))

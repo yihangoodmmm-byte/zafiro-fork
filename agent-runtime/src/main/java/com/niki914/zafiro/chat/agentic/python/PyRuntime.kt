@@ -8,6 +8,7 @@ import android.os.IBinder
 import android.os.RemoteException
 import com.niki914.logging.Logger
 import com.niki914.xposed.api.util.ContextProvider
+import com.niki914.zafiro.chat.agentic.AgentTenantContext
 import com.niki914.zafiro.chat.agentic.python.PyRuntime.connection
 import com.niki914.zafiro.chat.agentic.python.PyRuntime.exec
 import com.niki914.zafiro.chat.agentic.python.PyRuntime.kill
@@ -24,6 +25,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.coroutineContext
 
 class PythonWorkerUnavailableException :
     IllegalStateException("Python worker is not connected")
@@ -162,7 +164,8 @@ object PyRuntime {
         val startedAtMs = System.currentTimeMillis()
         Logger.i(LOG_TAG, "python exec start codeLength=${code.length} timeoutMs=$timeoutMs")
         try {
-            return execInternal(code, timeoutMs).also { result ->
+            val workspace = coroutineContext[AgentTenantContext]?.workspacePath
+            return execInternal(code, timeoutMs, workspace).also { result ->
                 Logger.i(
                     LOG_TAG,
                     "python exec done codeLength=${code.length} outputLength=${result.output.length} " +
@@ -185,7 +188,7 @@ object PyRuntime {
         }
     }
 
-    private suspend fun execInternal(code: String, timeoutMs: Long): PyExecOutput {
+    private suspend fun execInternal(code: String, timeoutMs: Long, workspacePath: String?): PyExecOutput {
         ensureConnected()
         var svc = testService ?: service ?: throw PythonWorkerUnavailableException()
         if (!isHealthy(svc)) {
@@ -197,7 +200,7 @@ object PyRuntime {
                 throw PythonWorkerUnavailableException()
             }
         }
-        return execOn(svc, code, timeoutMs)
+        return execOn(svc, code, timeoutMs, workspacePath)
     }
 
     /** Kill the worker process — used by the round-terminate path. */
@@ -238,10 +241,11 @@ object PyRuntime {
         svc: IPythonWorkerService,
         code: String,
         timeoutMs: Long,
+        workspacePath: String?,
     ): PyExecOutput {
         try {
             val result = withTimeout(timeoutMs + EXEC_GRACE_MS) {
-                withContext(Dispatchers.IO) { svc.exec(code, timeoutMs) }
+                withContext(Dispatchers.IO) { svc.exec(code, timeoutMs, workspacePath) }
             }
             return consume(result)
         } catch (e: TimeoutCancellationException) {

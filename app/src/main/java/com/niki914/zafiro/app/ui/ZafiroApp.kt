@@ -65,7 +65,13 @@ import com.niki914.zafiro.app.ui.model.AppLaunchDecision
 import com.niki914.zafiro.app.ui.model.StartupAssistantUi
 import com.niki914.zafiro.app.ui.model.ThemeController
 import com.niki914.zafiro.app.ui.model.home.HomeChatViewModel
+import com.niki914.zafiro.app.ui.drawer.DrawerController
+import com.niki914.zafiro.app.ui.drawer.LocalDrawerController
+import com.niki914.zafiro.app.ui.drawer.NavigationDrawerOverlay
+import com.niki914.zafiro.app.ui.model.home.HomeStartRequests
+import com.niki914.zafiro.app.ui.nav.ConversationHistoryPage
 import com.niki914.zafiro.app.ui.nav.HomePage
+import com.niki914.zafiro.app.ui.nav.SettingsHomePage
 import com.niki914.zafiro.app.ui.nav.NoTitle
 import com.niki914.zafiro.app.ui.nav.PageTitleSpec
 import com.niki914.zafiro.app.ui.nav.ResTitle
@@ -127,6 +133,8 @@ fun ZafiroApp(
     val currentEntry = controller.currentEntry
     val currentPage = currentEntry.page
     val currentChrome = pageChromeHost.stateFor(currentEntry.id)
+    var isDrawerOpen by remember { mutableStateOf(false) }
+    val drawerController = remember { DrawerController { isDrawerOpen = true } }
     val isChromeMenuOpen = chromeMenuExpanded && currentChrome.menuItems.isNotEmpty()
     val rightButtonAlpha by animateFloatAsState(
         targetValue = if (isChromeMenuOpen) 0f else 1f,
@@ -298,6 +306,7 @@ fun ZafiroApp(
         ) {
             CompositionLocalProvider(
                 LocalMarkdownScale provides markdownScale,
+                LocalDrawerController provides drawerController,
             ) {
                 LiquidScreen(
                     state = screenState,
@@ -444,6 +453,25 @@ fun ZafiroApp(
                                 onDismiss = { pendingCrashReport = null },
                             )
                         }
+
+                        // 抽屉最后渲染：盖住顶栏与内容，不参与下层布局测量。
+                        NavigationDrawerOverlay(
+                            visible = isDrawerOpen,
+                            onDismiss = { isDrawerOpen = false },
+                            onNewConversation = {
+                                isDrawerOpen = false
+                                if (currentPage == HomePage) resetTo(HomePage) else push(HomePage)
+                                HomeStartRequests.requestNewConversation()
+                            },
+                            onOpenHistory = {
+                                isDrawerOpen = false
+                                pushFromLeft(ConversationHistoryPage)
+                            },
+                            onOpenSettings = {
+                                isDrawerOpen = false
+                                push(SettingsHomePage)
+                            },
+                        )
                     }
                 }
                 currentChrome.overlay?.invoke()

@@ -4,7 +4,9 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.net.Uri
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.MediaStore
+import com.niki914.zafiro.api.model.WorkspaceDirectory
 
 /**
  * SAF 的 `content://` uri → agent 能按路径读的真实路径。
@@ -109,6 +111,39 @@ internal object DocumentPathResolver {
         // 5. 外部存储卷：primary:path 或 <UUID>:path (外置 SD 卡)
         val root = Environment.getExternalStorageDirectory()?.path
         return toPath(docId = docId, root = root, isTree = isTree)
+    }
+
+    /** Only a tree on a known local provider can become a native working directory. */
+    @Suppress("DEPRECATION")
+    fun resolveWorkspaceTree(uri: Uri): String? {
+        if (uri.scheme != ContentResolver.SCHEME_CONTENT || !DocumentsContract.isTreeUri(uri)) return null
+        val treeId = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull() ?: return null
+        return workspaceTreePath(uri.authority, treeId, Environment.getExternalStorageDirectory()?.path)
+    }
+
+    internal fun workspaceTreePath(authority: String?, treeId: String, primaryRoot: String?): String? {
+        if (treeId.any { Character.isISOControl(it) } ||
+            treeId.substringAfter(':').split('/').any { it == ".." }
+        ) return null
+
+        val path = when (authority) {
+            EXTERNAL_STORAGE_AUTHORITY -> {
+                if (treeId.startsWith("home:")) {
+                    primaryRoot?.let { toPath("primary:${treeId.removePrefix("home:")}", "$it/Documents", false) }
+                } else {
+                    toPath(treeId, primaryRoot, false)
+                }
+            }
+
+            DOWNLOADS_AUTHORITY -> when {
+                treeId == "downloads" -> primaryRoot?.let { "$it/Download" }
+                treeId.startsWith(RAW_PREFIX) -> rawPath(treeId, false)
+                else -> null // An opaque Downloads ID is not a filesystem path.
+            }
+
+            else -> null
+        }
+        return path?.let(WorkspaceDirectory::absolutePath)
     }
 
     internal fun toPath(docId: String, root: String?, isTree: Boolean): String? {

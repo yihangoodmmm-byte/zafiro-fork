@@ -42,6 +42,7 @@ class LocalToolExecutor(
     private val onCustomPyToolWritten: suspend (LocalTool.Py) -> Unit = {},
     private val tenantId: String = "",
     private val agentControlProvider: (() -> AgentControl?)? = null,
+    private val workspacePathProvider: () -> String? = { null },
 ) : ToolExecutor {
 
     private companion object {
@@ -52,8 +53,9 @@ class LocalToolExecutor(
 
     override suspend fun execute(call: ToolCallContext): ToolCallOutcome {
         val control = agentControlProvider?.invoke()
-        val context = if (tenantId.isNotBlank() || control != null) {
-            AgentTenantContext(tenantId = tenantId, agentControl = control)
+        val workspacePath = workspacePathProvider()
+        val context = if (tenantId.isNotBlank() || control != null || workspacePath != null) {
+            AgentTenantContext(tenantId = tenantId, agentControl = control, workspacePath = workspacePath)
         } else {
             null
         }

@@ -8,10 +8,12 @@ import com.niki914.zafiro.api.TurnStart
 import com.niki914.zafiro.api.model.AgentState
 import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
+import com.niki914.zafiro.api.model.ChatReasoningEffort
 import com.niki914.zafiro.api.model.ContextUsage
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
 import com.niki914.zafiro.api.model.ConversationTurn
+import com.niki914.zafiro.api.model.FileRef
 import com.niki914.zafiro.api.model.TurnBlock
 import com.niki914.zafiro.api.Agent
 import com.niki914.zafiro.api.AgentControl
@@ -20,10 +22,13 @@ import com.niki914.zafiro.app.conversation.ForkKind
 import com.niki914.zafiro.app.ui.model.MainDispatcherRule
 import com.niki914.zafiro.app.ui.model.TextPacer
 import com.niki914.zafiro.business.agent.turnIdAt
+import com.niki914.zafiro.business.files.FileAttachResult
+import com.niki914.zafiro.business.files.FilesService
 import com.niki914.zafiro.repo.LlmConfigsDocument
 import com.niki914.zafiro.repo.SavedLlmConfig
 import com.niki914.zafiro.service.ServiceRegistry
 import com.niki914.zafiro.service.installService
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +76,39 @@ class HomeChatViewModelTest {
             fixture.vm.uiStateFlow.value.turns.single().blocks
         )
         assertFalse(fixture.vm.uiStateFlow.value.isGenerating)
+    }
+
+    @Test
+    fun workspaceBindPersistsWithoutCreatingAnAttachmentOrOverwritingTaskOptions() = runTest {
+        val fixture = fixture()
+        val result = CompletableDeferred<FileAttachResult>()
+        installService<FilesService>(object : FilesService {
+            override fun resolve(uri: String): FileRef? = null
+            override suspend fun attach(uri: String): FileAttachResult = error("binding must not attach")
+            override suspend fun bindWorkspace(input: String): FileAttachResult = result.await()
+        })
+        fixture.vm.sendIntent(HomeChatIntent.WorkspaceSelected("/sdcard/Example"))
+        runCurrent()
+        assertTrue(fixture.vm.uiStateFlow.value.isResolvingWorkspace)
+        fixture.vm.sendIntent(HomeChatIntent.ToggleWorkflow)
+        fixture.vm.sendIntent(HomeChatIntent.SelectReasoningEffort(ChatReasoningEffort.High))
+        runCurrent()
+
+        val path = "/storage/emulated/0/Example"
+        result.complete(FileAttachResult.Ok(FileRef(path)))
+        advanceUntilIdle()
+        val state = fixture.vm.uiStateFlow.value
+        assertFalse(state.isResolvingWorkspace)
+        assertTrue(state.pendingFiles.isEmpty())
+        assertEquals(path, state.turnOptions.workspacePath)
+        assertTrue(state.turnOptions.workflowEnabled)
+        assertEquals(ChatReasoningEffort.High, state.turnOptions.reasoningEffort)
+        assertEquals(state.turnOptions, fixture.store.savedTurnOptions)
+
+        fixture.vm.sendIntent(HomeChatIntent.ClearWorkspace)
+        advanceUntilIdle()
+        assertNull(fixture.store.savedTurnOptions.workspacePath)
+        assertTrue(fixture.store.savedTurnOptions.workflowEnabled)
     }
 
     @Test

@@ -10,9 +10,11 @@ import com.niki914.zafiro.api.Approver
 import com.niki914.zafiro.api.TurnStart
 import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
+import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.DraftImage
 import com.niki914.zafiro.api.model.FileRef
+import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.api.model.isRunning
 import com.niki914.zafiro.app.conversation.ConversationBranchTree
 import com.niki914.zafiro.app.conversation.ConversationFormatter
@@ -28,11 +30,15 @@ import kotlinx.coroutines.CancellableContinuation
 import com.niki914.zafiro.api.util.runCatchingCancellable
 import com.niki914.zafiro.api.util.tryOrDefault
 import com.niki914.zafiro.api.util.tryIgnore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.resume
 
@@ -91,11 +97,27 @@ class HomeChatViewModel internal constructor(
     private var pacedThinkingBlockId: String? = null
     private var conversationBeingLoaded: String? = null
 
+    private val turnOptionsMutex = Mutex()
+    private val executionOptionsReady = viewModelScope.launch {
+        runCatchingCancellable { conversations.loadTurnOptions() }
+            .onSuccess { options -> updateState { copy(turnOptions = options) } }
+            .onFailure { Logger.w(LOG_TAG, "load chat task options failed", it) }
+    }
+
     init {
         observeAgent()
         restoreStartupState()
         viewModelScope.launch {
             refreshSavedConfigs()
+        }
+        // 抽屉里的「新对话」经请求通道进来：壳层拿不到本 ViewModel。
+        if (HomeStartRequests.consumeNewConversation()) {
+            viewModelScope.launch { startNewConversation() }
+        }
+        viewModelScope.launch {
+            HomeStartRequests.newConversationEvents.collect {
+                if (HomeStartRequests.consumeNewConversation()) startNewConversation()
+            }
         }
     }
 
@@ -110,6 +132,17 @@ class HomeChatViewModel internal constructor(
             is HomeChatIntent.ImageRemoved -> removeImage(intent.id)
             is HomeChatIntent.FileAttached -> attachFile(intent.uri)
             is HomeChatIntent.FileRemoved -> removeFile(intent.id)
+            is HomeChatIntent.WorkspaceSelected -> bindWorkspace(intent.input)
+            HomeChatIntent.ClearWorkspace -> if (!currentState.isResolvingWorkspace) {
+                changeTurnOptions { copy(workspacePath = null) }
+            }
+            HomeChatIntent.ToggleWorkflow -> changeTurnOptions { copy(workflowEnabled = !workflowEnabled) }
+            HomeChatIntent.ToggleReasoningGuide -> changeTurnOptions {
+                copy(reasoningGuideEnabled = !reasoningGuideEnabled)
+            }
+            is HomeChatIntent.SelectReasoningEffort -> changeTurnOptions {
+                copy(reasoningEffort = intent.effort)
+            }
             is HomeChatIntent.CameraCaptured -> attachCameraImage(intent.uri, intent.path)
             HomeChatIntent.StopGenerating -> stopGenerating()
             HomeChatIntent.NewConversation -> startNewConversation()
@@ -508,6 +541,61 @@ class HomeChatViewModel internal constructor(
             .onFailure { Logger.w(LOG_TAG, "camera temp file delete failed path=$path") }
     }
 
+    private fun bindWorkspace(input: String) {
+        if (currentState.isResolvingWorkspace) return
+        updateState { copy(isResolvingWorkspace = true) }
+        // The storage settings UI can take time; don't block the MVI queue or tool approvals.
+        viewModelScope.launch {
+            try {
+                executionOptionsReady.join()
+                val result = runCatchingCancellable { files.bindWorkspace(input) }
+                    .onFailure { Logger.w(LOG_TAG, "workspace resolution failed", it) }
+                    .getOrDefault(FileAttachResult.Unreadable)
+                when (result) {
+                    is FileAttachResult.Ok -> changeTurnOptions { copy(workspacePath = result.file.path) }
+                    FileAttachResult.Unresolvable -> sendEffect(HomeChatEffect.WorkspaceFailed(FileAttachReason.Unresolvable))
+                    FileAttachResult.NoPermission -> sendEffect(HomeChatEffect.WorkspaceFailed(FileAttachReason.NoPermission))
+                    FileAttachResult.Unreadable -> sendEffect(HomeChatEffect.WorkspaceFailed(FileAttachReason.Unreadable))
+                }
+            } finally {
+                updateState { copy(isResolvingWorkspace = false) }
+            }
+        }
+    }
+
+    private suspend fun changeTurnOptions(update: ChatTurnOptions.() -> ChatTurnOptions) {
+        executionOptionsReady.join()
+        // Bind can resume from the permission UI concurrently with another settings intent.
+        turnOptionsMutex.withLock { saveTurnOptions(currentState.turnOptions.update()) }
+    }
+
+    private suspend fun saveTurnOptions(options: ChatTurnOptions) {
+        if (options == currentState.turnOptions) return
+        runCatchingCancellable { conversations.saveTurnOptions(options) }
+            .onSuccess { updateState { copy(turnOptions = options) } }
+            .onFailure {
+                Logger.w(LOG_TAG, "save chat task options failed", it)
+                sendEffect(HomeChatEffect.TurnOptionsSaveFailed)
+            }
+    }
+
+    private suspend fun optionsForTurn(): ChatTurnOptions? {
+        executionOptionsReady.join()
+        if (currentState.isResolvingWorkspace) {
+            sendEffect(HomeChatEffect.WorkspaceBusy)
+            return null
+        }
+        val options = currentState.turnOptions
+        val workspace = options.workspacePath ?: return options
+        val resolved = withContext(Dispatchers.IO) { WorkspaceDirectory.resolve(workspace) }
+        if (resolved == null) {
+            sendEffect(HomeChatEffect.WorkspaceFailed(FileAttachReason.Unreadable))
+            return null
+        }
+        // Accept older /sdcard aliases and trailing slashes; pass the same canonical path downstream.
+        return options.copy(workspacePath = resolved)
+    }
+
     private suspend fun sendCurrentInput() {
         val trimmedInput = currentState.input.trim()
         val hasAttachments =
@@ -516,11 +604,12 @@ class HomeChatViewModel internal constructor(
             sendEffect(HomeChatEffect.EmptyInputAttempted)
             return
         }
+        val options = optionsForTurn() ?: return
         agent.updateDraft { it.copy(text = trimmedInput) }
         // stream() is synchronous; don't let it consume Pending images before AgentImpl finishes ingest.
         agent.draft.first { draft -> draft.images.none { it is DraftImage.Pending } }
         updateState { copy(isGenerating = true) }
-        val result = agent.stream()
+        val result = agent.stream(options)
         Logger.i(LOG_TAG, "send result=$result")
         if (result != TurnStart.Started) {
             updateState {
@@ -577,6 +666,8 @@ class HomeChatViewModel internal constructor(
                 globalActiveConfigId = currentState.globalActiveConfigId,
                 boundConfigId = null,
                 isLoadingConversation = true,
+                turnOptions = turnOptions,
+                isResolvingWorkspace = isResolvingWorkspace,
             )
         }
         val startedAtMs = System.currentTimeMillis()
@@ -635,7 +726,13 @@ class HomeChatViewModel internal constructor(
                     t,
                 )
                 tryIgnore { conversations.setLastOpenedConversationId("") }
-                updateState { HomeChatUiState(input = currentState.input).withClearedTransient() }
+                updateState {
+                    HomeChatUiState(
+                        input = input,
+                        turnOptions = turnOptions,
+                        isResolvingWorkspace = isResolvingWorkspace,
+                    ).withClearedTransient()
+                }
             }
         }
     }
@@ -728,6 +825,7 @@ class HomeChatViewModel internal constructor(
 
     private suspend fun reGenerateAt(turnId: Long) {
         if (currentState.isGenerating) return
+        val options = optionsForTurn() ?: return
         val currentId = agent.conversation.value.id?.value ?: return
         val result = conversations.forkAtTurn(currentId, turnId.toInt(), ForkKind.Regenerate)
             ?: return
@@ -748,7 +846,7 @@ class HomeChatViewModel internal constructor(
                 files = result.files,
             )
         }
-        if (agent.stream() == TurnStart.Started) {
+        if (agent.stream(options) == TurnStart.Started) {
             updateState { copy(input = "") }
         }
     }

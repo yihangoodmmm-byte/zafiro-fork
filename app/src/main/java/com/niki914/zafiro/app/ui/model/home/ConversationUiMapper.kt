@@ -10,6 +10,7 @@ import com.niki914.zafiro.api.model.TurnBlock
 import com.niki914.zafiro.api.model.TurnFailureCode
 import com.niki914.zafiro.app.ui.model.ToolPresentation
 import com.niki914.zafiro.chat.LlmErrorCode
+import com.niki914.zafiro.chat.agentic.WorkflowPlanReport
 
 // Tool status is contract-derived; renderer keeps its existing three-state UI model.
 /**
@@ -88,6 +89,9 @@ private fun ToolInvocation.toStatus(outcome: ToolOutcome?): HomeToolStatus {
         displayNameRes = ToolPresentation.displayNameResOf(name),
         inputText = ToolPresentation.inputOf(name, argumentsJson),
         images = (outcome as? ToolOutcome.Succeeded)?.images.orEmpty().map { it.toHomeImage() },
+        workflowReport = if (name == WorkflowPlanReport.TOOL_NAME && outcome is ToolOutcome.Succeeded) {
+            WorkflowPlanReport.fromToolResult(outcome.resultText)
+        } else null,
     )
 }
 

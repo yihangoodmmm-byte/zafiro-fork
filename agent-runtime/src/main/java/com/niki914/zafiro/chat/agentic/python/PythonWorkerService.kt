@@ -78,14 +78,15 @@ class PythonWorkerService : Service() {
     }
 
     private inner class Stub : IPythonWorkerService.Stub() {
-        override fun exec(code: String?, timeoutMs: Long): PyExecResult {
+        override fun exec(code: String?, timeoutMs: Long, workspacePath: String?): PyExecResult {
             awaitReady()
             val py = Python.getInstance()
             val runtime = py.getModule("runtime")
             val result = runtime.callAttr(
                 "exec_code",
                 code ?: "",
-                timeoutMs / 1000.0
+                timeoutMs / 1000.0,
+                workspacePath.orEmpty(),
             )
             // runtime.exec_code 返回 {status, file_path, inline_text}
             val status = when (result.callAttr("get", "status").toString()) {

@@ -64,7 +64,7 @@ data class PyExecResult(
  *   (always executable while a Binder thread is free).
  */
 interface IPythonWorkerService : IInterface {
-    fun exec(code: String?, timeoutMs: Long): PyExecResult
+    fun exec(code: String?, timeoutMs: Long, workspacePath: String?): PyExecResult
     fun ping(): String?
     fun kill()
 
@@ -81,7 +81,8 @@ interface IPythonWorkerService : IInterface {
                     data.enforceInterface(DESCRIPTOR)
                     val codeText = data.readString()
                     val timeoutMs = data.readLong()
-                    val result = exec(codeText, timeoutMs)
+                    val workspacePath = data.readString()
+                    val result = exec(codeText, timeoutMs, workspacePath)
                     reply?.writeNoException()
                     result.writeToParcel(reply!!)
                     return true
@@ -124,13 +125,14 @@ interface IPythonWorkerService : IInterface {
         private class Proxy(private val remote: IBinder) : IPythonWorkerService {
             override fun asBinder(): IBinder = remote
 
-            override fun exec(code: String?, timeoutMs: Long): PyExecResult {
+            override fun exec(code: String?, timeoutMs: Long, workspacePath: String?): PyExecResult {
                 val data = Parcel.obtain()
                 val reply = Parcel.obtain()
                 try {
                     data.writeInterfaceToken(DESCRIPTOR)
                     data.writeString(code)
                     data.writeLong(timeoutMs)
+                    data.writeString(workspacePath)
                     remote.transact(TRANSACTION_exec, data, reply, 0)
                     reply.readException()
                     return PyExecResult.fromParcel(reply)

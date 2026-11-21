@@ -2,6 +2,7 @@ package com.niki914.zafiro.app.ui.chat.model
 
 import com.niki914.zafiro.app.ui.model.home.HomeChatFile
 import com.niki914.zafiro.app.ui.model.home.HomeChatImage
+import com.niki914.zafiro.chat.agentic.WorkflowPlanReport
 
 /**
  * 回合级 UI 模型：严格区分用户输入与助手生成流。
@@ -15,6 +16,7 @@ data class TurnUiModel(
     val sections: List<TurnSection> = emptyList(),
     val isCompactedDivider: Boolean = false,
     val isCompacting: Boolean = false,
+    val workflowReport: WorkflowPlanReport? = null,
 ) {
     val hasUserContent: Boolean
         get() = userText.isNotBlank() || userImages.isNotEmpty() || userFiles.isNotEmpty()
