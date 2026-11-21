@@ -24,7 +24,9 @@ android {
         minSdk = 26
         targetSdk = 34
         versionName = "1.8.1"
-        versionCode = 15
+        // 本地底座切换：设备上曾装过 2.0.0（code 20），这里抬高到 21 以支持正常覆盖安装，
+        // 避免每次都要带 -d 强制降级。
+        versionCode = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
