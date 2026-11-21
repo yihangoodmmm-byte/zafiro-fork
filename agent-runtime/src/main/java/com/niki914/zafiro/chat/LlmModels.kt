@@ -1,7 +1,7 @@
 package com.niki914.zafiro.chat
 
 import com.niki914.okia.message.ThinkingLevel
-import com.niki914.zafiro.chat.agentic.PromptComposeResult
+import com.niki914.zafiro.chat.prompt.PromptComposeResult
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinTool
 import com.niki914.zafiro.settings.model.RepetitionSensitivity
 
