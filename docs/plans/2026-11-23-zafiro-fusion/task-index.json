@@ -1,0 +1,1261 @@
+{
+  "schemaVersion": 1,
+  "status": "planning-only",
+  "sourceBaseline": "b0e02ac",
+  "tasks": [
+    {
+      "id": "T00",
+      "stage": "P0",
+      "deps": [],
+      "features": [],
+      "size": "M",
+      "name": "建立可复现基线与用户数据样本",
+      "status": "planned"
+    },
+    {
+      "id": "T01",
+      "stage": "P0",
+      "deps": [
+        "T00"
+      ],
+      "features": [
+        "D12",
+        "R01",
+        "R07"
+      ],
+      "size": "XL",
+      "name": "固定来源资产并验证关键平台可行性",
+      "status": "planned"
+    },
+    {
+      "id": "T02",
+      "stage": "P0",
+      "deps": [
+        "T00"
+      ],
+      "features": [
+        "U01",
+        "U10"
+      ],
+      "size": "M",
+      "name": "确定工作台交互与架构决策",
+      "status": "planned"
+    },
+    {
+      "id": "T03",
+      "stage": "P1",
+      "deps": [
+        "T01",
+        "T02"
+      ],
+      "features": [
+        "D01",
+        "D11"
+      ],
+      "size": "L",
+      "name": "建立能力与调用上下文契约",
+      "status": "planned"
+    },
+    {
+      "id": "T04",
+      "stage": "P1",
+      "deps": [
+        "T03"
+      ],
+      "features": [
+        "F02",
+        "R04"
+      ],
+      "size": "L",
+      "name": "持久任务、运行与操作日志",
+      "status": "planned"
+    },
+    {
+      "id": "T05",
+      "stage": "P1",
+      "deps": [
+        "T03",
+        "T04"
+      ],
+      "features": [
+        "U01"
+      ],
+      "size": "L",
+      "name": "统一工作区、文件与工件引用",
+      "status": "planned"
+    },
+    {
+      "id": "T06",
+      "stage": "P1",
+      "deps": [
+        "T03",
+        "T04",
+        "T05"
+      ],
+      "features": [
+        "H04"
+      ],
+      "size": "M",
+      "name": "工具、MCP 与自动化共享能力调用",
+      "status": "planned"
+    },
+    {
+      "id": "T07",
+      "stage": "P2",
+      "deps": [
+        "T06"
+      ],
+      "features": [
+        "D02",
+        "D03",
+        "D04",
+        "D05"
+      ],
+      "size": "XL",
+      "name": "统一设备通道与屏幕操作",
+      "status": "planned"
+    },
+    {
+      "id": "T08",
+      "stage": "P2",
+      "deps": [
+        "T07"
+      ],
+      "features": [
+        "D06",
+        "D11"
+      ],
+      "size": "L",
+      "name": "范围策略、租约与跨入口校验",
+      "status": "planned"
+    },
+    {
+      "id": "T09",
+      "stage": "P2",
+      "deps": [
+        "T08"
+      ],
+      "features": [
+        "D07",
+        "D08",
+        "D09",
+        "D10"
+      ],
+      "size": "XL",
+      "name": "虚拟屏生命周期与原生查看器",
+      "status": "planned"
+    },
+    {
+      "id": "T10",
+      "stage": "P2",
+      "deps": [
+        "T01",
+        "T08",
+        "T09"
+      ],
+      "features": [
+        "D12"
+      ],
+      "size": "XL",
+      "name": "Rust 控制核心候选路径验证与切换",
+      "status": "planned"
+    },
+    {
+      "id": "T11",
+      "stage": "P3",
+      "deps": [
+        "T01",
+        "T05",
+        "T08"
+      ],
+      "features": [
+        "B01",
+        "B02",
+        "B08",
+        "B09"
+      ],
+      "size": "XL",
+      "name": "浏览器宿主与数据隔离",
+      "status": "planned"
+    },
+    {
+      "id": "T12",
+      "stage": "P3",
+      "deps": [
+        "T11",
+        "T06"
+      ],
+      "features": [
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B07"
+      ],
+      "size": "L",
+      "name": "浏览器观察、动作与图像工件",
+      "status": "planned"
+    },
+    {
+      "id": "T13",
+      "stage": "P3",
+      "deps": [
+        "T02",
+        "T05",
+        "T09",
+        "T12"
+      ],
+      "features": [
+        "B10",
+        "U01"
+      ],
+      "size": "L",
+      "name": "工作台基础与浏览器原生界面",
+      "status": "planned"
+    },
+    {
+      "id": "T14",
+      "stage": "P4",
+      "deps": [
+        "T01",
+        "T04",
+        "T05"
+      ],
+      "features": [
+        "R01",
+        "R10",
+        "R11",
+        "R12"
+      ],
+      "size": "XL",
+      "name": "运行时资产安装事务与监督",
+      "status": "planned"
+    },
+    {
+      "id": "T15",
+      "stage": "P4",
+      "deps": [
+        "T14",
+        "T03"
+      ],
+      "features": [
+        "R02",
+        "R03"
+      ],
+      "size": "XL",
+      "name": "Bionic 工具链与PTY后端",
+      "status": "planned"
+    },
+    {
+      "id": "T16",
+      "stage": "P4",
+      "deps": [
+        "T15",
+        "T04"
+      ],
+      "features": [
+        "R04",
+        "R05",
+        "R12"
+      ],
+      "size": "L",
+      "name": "统一作业、终端归属与环境设置",
+      "status": "planned"
+    },
+    {
+      "id": "T17",
+      "stage": "P5",
+      "deps": [
+        "T01",
+        "T14",
+        "T15"
+      ],
+      "features": [
+        "R06",
+        "R07",
+        "R10"
+      ],
+      "size": "XL",
+      "name": "Debian 准备、loader 与ldconfig兼容",
+      "status": "planned"
+    },
+    {
+      "id": "T18",
+      "stage": "P5",
+      "deps": [
+        "T17",
+        "T16",
+        "T06"
+      ],
+      "features": [
+        "R08",
+        "R09"
+      ],
+      "size": "XL",
+      "name": "Linux 会话、工具契约与开发链",
+      "status": "planned"
+    },
+    {
+      "id": "T19",
+      "stage": "P6",
+      "deps": [
+        "T04",
+        "T16"
+      ],
+      "features": [
+        "U05",
+        "R11"
+      ],
+      "size": "L",
+      "name": "后台生命周期与任务恢复",
+      "status": "planned"
+    },
+    {
+      "id": "T20",
+      "stage": "P6",
+      "deps": [
+        "T19",
+        "T13"
+      ],
+      "features": [
+        "U03",
+        "U04"
+      ],
+      "size": "XL",
+      "name": "悬浮交互、通知与统一等待输入",
+      "status": "planned"
+    },
+    {
+      "id": "T21",
+      "stage": "P6",
+      "deps": [
+        "T05",
+        "T20"
+      ],
+      "features": [
+        "U02"
+      ],
+      "size": "M",
+      "name": "文件来件、相机与跨页面附件",
+      "status": "planned"
+    },
+    {
+      "id": "T22",
+      "stage": "P7",
+      "deps": [
+        "T14",
+        "T15",
+        "T19",
+        "T03"
+      ],
+      "features": [
+        "H01",
+        "H03"
+      ],
+      "size": "XL",
+      "name": "完整 Harness 引擎与受信任工作台",
+      "status": "planned"
+    },
+    {
+      "id": "T23",
+      "stage": "P7",
+      "deps": [
+        "T22",
+        "T04",
+        "T05",
+        "T06"
+      ],
+      "features": [
+        "H02",
+        "H04",
+        "H09"
+      ],
+      "size": "XL",
+      "name": "引擎会话适配与双引擎统一展示",
+      "status": "planned"
+    },
+    {
+      "id": "T24",
+      "stage": "P7",
+      "deps": [
+        "T16",
+        "T06"
+      ],
+      "features": [
+        "H05",
+        "H06",
+        "H07",
+        "H11",
+        "F16"
+      ],
+      "size": "XL",
+      "name": "扩展中心与Node扩展宿主",
+      "status": "planned"
+    },
+    {
+      "id": "T25",
+      "stage": "P8",
+      "deps": [
+        "T05",
+        "T14",
+        "T24"
+      ],
+      "features": [
+        "H12"
+      ],
+      "size": "XL",
+      "name": "文件保存点与配置扩展回退",
+      "status": "planned"
+    },
+    {
+      "id": "T26",
+      "stage": "P8",
+      "deps": [
+        "T14",
+        "T19",
+        "T25"
+      ],
+      "features": [
+        "U06",
+        "U07",
+        "U08",
+        "U09",
+        "D05",
+        "R10"
+      ],
+      "size": "XL",
+      "name": "独立恢复、诊断、更新与维护",
+      "status": "planned"
+    },
+    {
+      "id": "T27",
+      "stage": "P9",
+      "deps": [
+        "T04",
+        "T06",
+        "T19"
+      ],
+      "features": [
+        "F01",
+        "F02"
+      ],
+      "size": "XL",
+      "name": "确定性自动化引擎与调度",
+      "status": "planned"
+    },
+    {
+      "id": "T28",
+      "stage": "P9",
+      "deps": [
+        "T06",
+        "T19"
+      ],
+      "features": [
+        "F03",
+        "F04"
+      ],
+      "size": "L",
+      "name": "MCP增强、可选隧道与网络诊断",
+      "status": "planned"
+    },
+    {
+      "id": "T29",
+      "stage": "P9",
+      "deps": [
+        "T08",
+        "T16",
+        "T28"
+      ],
+      "features": [
+        "F05",
+        "F06"
+      ],
+      "size": "L",
+      "name": "远程设备与设备租约",
+      "status": "planned"
+    },
+    {
+      "id": "T30",
+      "stage": "P10",
+      "deps": [
+        "T05",
+        "T06",
+        "T24"
+      ],
+      "features": [
+        "F11"
+      ],
+      "size": "L",
+      "name": "角色、记忆与角色工作区",
+      "status": "planned"
+    },
+    {
+      "id": "T31",
+      "stage": "P10",
+      "deps": [
+        "T30",
+        "T04",
+        "T19"
+      ],
+      "features": [
+        "F12",
+        "F13"
+      ],
+      "size": "XL",
+      "name": "多Agent团队、群聊与游戏编排",
+      "status": "planned"
+    },
+    {
+      "id": "T32",
+      "stage": "P10",
+      "deps": [
+        "T09",
+        "T12",
+        "T30",
+        "T04"
+      ],
+      "features": [
+        "F07",
+        "F09"
+      ],
+      "size": "XL",
+      "name": "统一规划、视觉执行与验证",
+      "status": "planned"
+    },
+    {
+      "id": "T33",
+      "stage": "P10",
+      "deps": [
+        "T14",
+        "T30"
+      ],
+      "features": [
+        "F10"
+      ],
+      "size": "XL",
+      "name": "本地模型资产与推理管理",
+      "status": "planned"
+    },
+    {
+      "id": "T34",
+      "stage": "P11",
+      "deps": [
+        "T13",
+        "T24",
+        "T25"
+      ],
+      "features": [
+        "F14",
+        "I06"
+      ],
+      "size": "XL",
+      "name": "MiniAPP受限运行与工件生命周期",
+      "status": "planned"
+    },
+    {
+      "id": "T35",
+      "stage": "P11",
+      "deps": [
+        "T34",
+        "T30"
+      ],
+      "features": [
+        "F15",
+        "I07"
+      ],
+      "size": "L",
+      "name": "原生 AI Page 与页面动作",
+      "status": "planned"
+    },
+    {
+      "id": "T36",
+      "stage": "P11",
+      "deps": [
+        "T23",
+        "T24",
+        "T26"
+      ],
+      "features": [
+        "H08",
+        "H09",
+        "H10"
+      ],
+      "size": "XL",
+      "name": "订阅账号、模型能力与生成媒体",
+      "status": "planned"
+    },
+    {
+      "id": "T37",
+      "stage": "P11",
+      "deps": [
+        "T20",
+        "T21",
+        "T26",
+        "T31",
+        "T35",
+        "T36"
+      ],
+      "features": [
+        "U10",
+        "U01"
+      ],
+      "size": "L",
+      "name": "界面整合、设置与启动个性化",
+      "status": "planned"
+    },
+    {
+      "id": "T38",
+      "stage": "P10/P12",
+      "deps": [
+        "T32",
+        "T29",
+        "T27",
+        "T33",
+        "T36"
+      ],
+      "features": [
+        "F08"
+      ],
+      "size": "L",
+      "name": "评测框架、故障注入与设备证据",
+      "status": "planned"
+    },
+    {
+      "id": "T39",
+      "stage": "P12",
+      "deps": [
+        "T37",
+        "T38",
+        "T18",
+        "T10"
+      ],
+      "features": [],
+      "size": "XL",
+      "name": "升级、性能与正式交付闸门",
+      "status": "planned"
+    },
+    {
+      "id": "T40",
+      "stage": "P7",
+      "deps": [
+        "T04",
+        "T06",
+        "T23"
+      ],
+      "features": [
+        "G01",
+        "G02"
+      ],
+      "size": "L",
+      "name": "计划模式与长期目标驱动",
+      "status": "planned"
+    },
+    {
+      "id": "T41",
+      "stage": "P7",
+      "deps": [
+        "T04",
+        "T05",
+        "T23"
+      ],
+      "features": [
+        "G03",
+        "G04",
+        "G05"
+      ],
+      "size": "L",
+      "name": "会话检索、标题与用量统计",
+      "status": "planned"
+    },
+    {
+      "id": "T42",
+      "stage": "P7",
+      "deps": [
+        "T23",
+        "T04"
+      ],
+      "features": [
+        "G06",
+        "G07"
+      ],
+      "size": "XL",
+      "name": "子代理派生与跨 CLI 协作",
+      "status": "planned"
+    },
+    {
+      "id": "T43",
+      "stage": "P7",
+      "deps": [
+        "T06",
+        "T16",
+        "T23"
+      ],
+      "features": [
+        "G08",
+        "G09"
+      ],
+      "size": "L",
+      "name": "程序化工具调用与持久 shell",
+      "status": "planned"
+    },
+    {
+      "id": "T44",
+      "stage": "P4",
+      "deps": [
+        "T04",
+        "T16"
+      ],
+      "features": [
+        "G10"
+      ],
+      "size": "M",
+      "name": "后台作业与输出游标增强",
+      "status": "planned"
+    },
+    {
+      "id": "T45",
+      "stage": "P7",
+      "deps": [
+        "T05",
+        "T06"
+      ],
+      "features": [
+        "G11",
+        "G12"
+      ],
+      "size": "L",
+      "name": "文件搜索、补丁编辑与 LSP",
+      "status": "planned"
+    },
+    {
+      "id": "T46",
+      "stage": "P9",
+      "deps": [
+        "T05",
+        "T06"
+      ],
+      "features": [
+        "G13",
+        "G14"
+      ],
+      "size": "L",
+      "name": "Office 文档与交付物展示",
+      "status": "planned"
+    },
+    {
+      "id": "T47",
+      "stage": "P9",
+      "deps": [
+        "T05",
+        "T14"
+      ],
+      "features": [
+        "G15",
+        "G16"
+      ],
+      "size": "L",
+      "name": "工作树隔离与 Hooks",
+      "status": "planned"
+    },
+    {
+      "id": "T48",
+      "stage": "P7",
+      "deps": [
+        "T06",
+        "T23"
+      ],
+      "features": [
+        "G17",
+        "G18",
+        "G19"
+      ],
+      "size": "L",
+      "name": "命令系统与压缩策略",
+      "status": "planned"
+    },
+    {
+      "id": "T49",
+      "stage": "P10",
+      "deps": [
+        "T23",
+        "T32"
+      ],
+      "features": [
+        "G20",
+        "G21"
+      ],
+      "size": "L",
+      "name": "自动评审与轨迹视图",
+      "status": "planned"
+    },
+    {
+      "id": "T50",
+      "stage": "P11",
+      "deps": [
+        "T23",
+        "T36"
+      ],
+      "features": [
+        "G22",
+        "G23",
+        "G24"
+      ],
+      "size": "L",
+      "name": "实时共享、语音输入与思考展示",
+      "status": "planned"
+    },
+    {
+      "id": "T51",
+      "stage": "P9",
+      "deps": [
+        "T07",
+        "T26"
+      ],
+      "features": [
+        "M01",
+        "M02"
+      ],
+      "size": "L",
+      "name": "联系人与通讯动作",
+      "status": "planned"
+    },
+    {
+      "id": "T52",
+      "stage": "P9",
+      "deps": [
+        "T07",
+        "T20"
+      ],
+      "features": [
+        "M03",
+        "M04"
+      ],
+      "size": "L",
+      "name": "日程、提醒与通知智能",
+      "status": "planned"
+    },
+    {
+      "id": "T53",
+      "stage": "P9",
+      "deps": [
+        "T07",
+        "T05"
+      ],
+      "features": [
+        "M05",
+        "M06"
+      ],
+      "size": "L",
+      "name": "媒体控制与拍摄录屏",
+      "status": "planned"
+    },
+    {
+      "id": "T54",
+      "stage": "P9",
+      "deps": [
+        "T06",
+        "T12",
+        "T26"
+      ],
+      "features": [
+        "M07",
+        "M08",
+        "M09",
+        "M10"
+      ],
+      "size": "L",
+      "name": "外部服务深链与查询",
+      "status": "planned"
+    },
+    {
+      "id": "T55",
+      "stage": "P10",
+      "deps": [
+        "T36",
+        "T54"
+      ],
+      "features": [
+        "M11"
+      ],
+      "size": "L",
+      "name": "社交平台发布",
+      "status": "planned"
+    },
+    {
+      "id": "T56",
+      "stage": "P9",
+      "deps": [
+        "T07",
+        "T26"
+      ],
+      "features": [
+        "M12",
+        "M13"
+      ],
+      "size": "L",
+      "name": "系统设置与应用管理",
+      "status": "planned"
+    },
+    {
+      "id": "T57",
+      "stage": "P9",
+      "deps": [
+        "T05",
+        "T13"
+      ],
+      "features": [
+        "M14",
+        "M15"
+      ],
+      "size": "M",
+      "name": "文件、剪贴板与分享",
+      "status": "planned"
+    },
+    {
+      "id": "T58",
+      "stage": "P9",
+      "deps": [
+        "T07",
+        "T27"
+      ],
+      "features": [
+        "M16",
+        "M17",
+        "M18"
+      ],
+      "size": "L",
+      "name": "硬件信息、宏与习惯建议",
+      "status": "planned"
+    },
+    {
+      "id": "T59",
+      "stage": "P10",
+      "deps": [
+        "T30",
+        "T25"
+      ],
+      "features": [
+        "M19",
+        "M20",
+        "M21"
+      ],
+      "size": "XL",
+      "name": "记忆体系与敏感保险库",
+      "status": "planned"
+    },
+    {
+      "id": "T60",
+      "stage": "P11",
+      "deps": [
+        "T36",
+        "T37"
+      ],
+      "features": [
+        "M22",
+        "M23",
+        "M24"
+      ],
+      "size": "L",
+      "name": "语音唤醒、播报与本地化",
+      "status": "planned"
+    },
+    {
+      "id": "T61",
+      "stage": "P10",
+      "deps": [
+        "T30"
+      ],
+      "features": [
+        "I01",
+        "I02"
+      ],
+      "size": "L",
+      "name": "角色卡与角色记忆",
+      "status": "planned"
+    },
+    {
+      "id": "T62",
+      "stage": "P10",
+      "deps": [
+        "T31"
+      ],
+      "features": [
+        "I03",
+        "I04",
+        "I05"
+      ],
+      "size": "XL",
+      "name": "群聊、游戏与角色 Home",
+      "status": "planned"
+    },
+    {
+      "id": "T63",
+      "stage": "P11",
+      "deps": [
+        "T36",
+        "T05"
+      ],
+      "features": [
+        "I08",
+        "I09",
+        "I10",
+        "I12"
+      ],
+      "size": "L",
+      "name": "图像、视频、图标与贴纸生成",
+      "status": "planned"
+    },
+    {
+      "id": "T64",
+      "stage": "P11",
+      "deps": [
+        "T46",
+        "T34"
+      ],
+      "features": [
+        "I11",
+        "I13"
+      ],
+      "size": "L",
+      "name": "文档生成与页面构建",
+      "status": "planned"
+    },
+    {
+      "id": "T65",
+      "stage": "P10",
+      "deps": [
+        "T27",
+        "T31"
+      ],
+      "features": [
+        "I14",
+        "I15"
+      ],
+      "size": "L",
+      "name": "任务回放、配方与宏编排",
+      "status": "planned"
+    },
+    {
+      "id": "T66",
+      "stage": "P11",
+      "deps": [
+        "T28",
+        "T36"
+      ],
+      "features": [
+        "I16"
+      ],
+      "size": "L",
+      "name": "IM 机器人通道",
+      "status": "planned"
+    },
+    {
+      "id": "T67",
+      "stage": "P11",
+      "deps": [
+        "T24",
+        "T37"
+      ],
+      "features": [
+        "I17",
+        "I18"
+      ],
+      "size": "L",
+      "name": "主题个性化与技能市场",
+      "status": "planned"
+    },
+    {
+      "id": "T68",
+      "stage": "P9",
+      "deps": [
+        "T07",
+        "T26"
+      ],
+      "features": [
+        "J01",
+        "J02",
+        "J03"
+      ],
+      "size": "L",
+      "name": "能力矩阵、审计与权限中心",
+      "status": "planned"
+    },
+    {
+      "id": "T69",
+      "stage": "P9",
+      "deps": [
+        "T24",
+        "T26"
+      ],
+      "features": [
+        "J04",
+        "J05",
+        "J06"
+      ],
+      "size": "L",
+      "name": "诊断包、安全模式与扩展冲突检查",
+      "status": "planned"
+    },
+    {
+      "id": "T70",
+      "stage": "P11",
+      "deps": [
+        "T14",
+        "T29"
+      ],
+      "features": [
+        "J07",
+        "J08",
+        "J09"
+      ],
+      "size": "L",
+      "name": "配额、代理与远程设备管理",
+      "status": "planned"
+    },
+    {
+      "id": "T71",
+      "stage": "P9",
+      "deps": [
+        "T04",
+        "T26"
+      ],
+      "features": [
+        "J10",
+        "J11",
+        "J12",
+        "J13"
+      ],
+      "size": "XL",
+      "name": "多租户、备份、崩溃与性能",
+      "status": "planned"
+    },
+    {
+      "id": "T72",
+      "stage": "P12",
+      "deps": [
+        "T37"
+      ],
+      "features": [
+        "J14",
+        "J15",
+        "J16",
+        "J17"
+      ],
+      "size": "L",
+      "name": "无障碍、键盘与大屏适配",
+      "status": "planned"
+    },
+    {
+      "id": "T73",
+      "stage": "P11",
+      "deps": [
+        "T26",
+        "T37"
+      ],
+      "features": [
+        "J18"
+      ],
+      "size": "M",
+      "name": "隐私开关与数据删除",
+      "status": "planned"
+    },
+    {
+      "id": "T74",
+      "stage": "P10",
+      "deps": [
+        "T05",
+        "T06"
+      ],
+      "features": [
+        "K01",
+        "K02",
+        "K03",
+        "K04"
+      ],
+      "size": "L",
+      "name": "媒体与文档处理",
+      "status": "planned"
+    },
+    {
+      "id": "T75",
+      "stage": "P10",
+      "deps": [
+        "T05",
+        "T13"
+      ],
+      "features": [
+        "K05",
+        "K06",
+        "K07",
+        "K08"
+      ],
+      "size": "L",
+      "name": "数据导出与开发工具",
+      "status": "planned"
+    },
+    {
+      "id": "T76",
+      "stage": "P11",
+      "deps": [
+        "T26",
+        "T06"
+      ],
+      "features": [
+        "K09",
+        "K10",
+        "K11"
+      ],
+      "size": "L",
+      "name": "日志聚合、调试注入与提示词库",
+      "status": "planned"
+    },
+    {
+      "id": "T77",
+      "stage": "P11",
+      "deps": [
+        "T36",
+        "T71"
+      ],
+      "features": [
+        "K12",
+        "K13",
+        "K14"
+      ],
+      "size": "L",
+      "name": "模型对比、评测与预算",
+      "status": "planned"
+    },
+    {
+      "id": "T78",
+      "stage": "P11",
+      "deps": [
+        "T41",
+        "T65"
+      ],
+      "features": [
+        "K15",
+        "K16",
+        "K17"
+      ],
+      "size": "L",
+      "name": "会话编辑、分支与模板",
+      "status": "planned"
+    },
+    {
+      "id": "T79",
+      "stage": "P11",
+      "deps": [
+        "T69",
+        "T73"
+      ],
+      "features": [
+        "K18",
+        "K19",
+        "K20"
+      ],
+      "size": "L",
+      "name": "插件脚手架与安全合规",
+      "status": "planned"
+    }
+  ]
+}

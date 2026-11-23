@@ -134,7 +134,7 @@ class McpServiceImpl(
         }
     }
 
-    private fun stopInternal() {
+    private suspend fun stopInternal() {
         if (serverEngine != null) {
             Logger.i(LOG_TAG, "stopping MCP server")
             try {
@@ -146,5 +146,6 @@ class McpServiceImpl(
             _status.value = McpServiceStatus.Stopped
             Logger.i(LOG_TAG, "MCP server stopped")
         }
+        toolAdapter.closeBrowserResources()
     }
 }

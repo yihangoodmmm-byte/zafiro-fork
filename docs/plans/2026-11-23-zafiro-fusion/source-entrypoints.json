@@ -1,0 +1,1607 @@
+{
+  "schemaVersion": 1,
+  "evidence": "static-definition-or-manifest-only-not-runtime",
+  "note": "正则定义/清单采样不是可达性或完成证明；注册、实现、依赖、真实执行需分别核实。",
+  "inventory": [
+    {
+      "kind": "mobileclaw-skill-id",
+      "matches": [
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 27,
+          "line": "                id = \"weibo_hot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 47,
+          "line": "                id = \"bilibili_hot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 67,
+          "line": "                id = \"zhihu_hot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 87,
+          "line": "                id = \"baidu_hot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 107,
+          "line": "                id = \"douyin_hot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 127,
+          "line": "                id = \"toutiao_hot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 149,
+          "line": "                id = \"weather_cn\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 172,
+          "line": "                id = \"ip_lookup\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 195,
+          "line": "                id = \"exchange_rate\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 215,
+          "line": "                id = \"cn_calendar\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 237,
+          "line": "                id = \"hitokoto\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 257,
+          "line": "                id = \"poem_cn\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/SkillMarket.kt",
+          "lineNumber": 277,
+          "line": "                id = \"joke_cn\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/WorkspaceManagerSkill.kt",
+          "lineNumber": 16,
+          "line": "        id = \"workspace_manager\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/executor/ShellExecutor.kt",
+          "lineNumber": 43,
+          "line": "        id = \"shell\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/PgyerReleaseSkill.kt",
+          "lineNumber": 60,
+          "line": "        id = \"pgyer_release\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/WebSkills.kt",
+          "lineNumber": 33,
+          "line": "        id = \"web_search\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/WebSkills.kt",
+          "lineNumber": 326,
+          "line": "        id = \"fetch_url\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/WebSkills.kt",
+          "lineNumber": 374,
+          "line": "        id = \"web_browse\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/WebSkills.kt",
+          "lineNumber": 400,
+          "line": "        id = \"web_content\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/WebSkills.kt",
+          "lineNumber": 424,
+          "line": "        id = \"web_js\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/GameRuntimeSkill.kt",
+          "lineNumber": 14,
+          "line": "        id = \"game_runtime\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/AppManagerSkill.kt",
+          "lineNumber": 61,
+          "line": "        id = \"app_manager\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/PermissionSkill.kt",
+          "lineNumber": 15,
+          "line": "        id = \"check_permissions\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/VirtualDisplaySkills.kt",
+          "lineNumber": 14,
+          "line": "        id = \"bg_launch\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/VirtualDisplaySkills.kt",
+          "lineNumber": 70,
+          "line": "        id = \"bg_read_screen\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/VirtualDisplaySkills.kt",
+          "lineNumber": 105,
+          "line": "        id = \"bg_screenshot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/VirtualDisplaySkills.kt",
+          "lineNumber": 133,
+          "line": "        id = \"bg_stop\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/VirtualDisplaySkills.kt",
+          "lineNumber": 153,
+          "line": "        id = \"vd_setup\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/ChineseBqbStickerSkill.kt",
+          "lineNumber": 17,
+          "line": "        id = \"sticker_bqb\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/AiHomeAssetSkill.kt",
+          "lineNumber": 21,
+          "line": "        id = \"ai_home_assets\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/FileSkills.kt",
+          "lineNumber": 18,
+          "line": "        id = \"create_file\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/FileSkills.kt",
+          "lineNumber": 72,
+          "line": "        id = \"read_file\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/FileSkills.kt",
+          "lineNumber": 109,
+          "line": "        id = \"list_files\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/FileSkills.kt",
+          "lineNumber": 191,
+          "line": "        id = \"create_html\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SystemSkills.kt",
+          "lineNumber": 29,
+          "line": "        id = \"clipboard\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SystemSkills.kt",
+          "lineNumber": 73,
+          "line": "        id = \"show_toast\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SystemSkills.kt",
+          "lineNumber": 102,
+          "line": "        id = \"device_info\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/PageControlSkill.kt",
+          "lineNumber": 18,
+          "line": "        id = \"page_control\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/CodexDesktopSkill.kt",
+          "lineNumber": 45,
+          "line": "        id = \"codex_desktop\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/ConsoleEditorSkill.kt",
+          "lineNumber": 28,
+          "line": "        id = \"console_editor\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SwitchRoleSkill.kt",
+          "lineNumber": 18,
+          "line": "        id = \"switch_role\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/GenerateVideoSkill.kt",
+          "lineNumber": 69,
+          "line": "        id = \"generate_video\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/McpClientSkill.kt",
+          "lineNumber": 30,
+          "line": "        id = \"mcp_client\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/McpClientSkill.kt",
+          "lineNumber": 173,
+          "line": "        id = \"mcp_connect\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/MetaSkill.kt",
+          "lineNumber": 28,
+          "line": "        id = \"create_skill\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SwitchModelSkill.kt",
+          "lineNumber": 14,
+          "line": "        id = \"switch_model\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/IntelliSkills.kt",
+          "lineNumber": 37,
+          "line": "        id = \"skill_check\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/IntelliSkills.kt",
+          "lineNumber": 140,
+          "line": "        id = \"quick_skill\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/IntelliSkills.kt",
+          "lineNumber": 269,
+          "line": "        id = \"skill_market\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/MemorySkill.kt",
+          "lineNumber": 18,
+          "line": "        id = \"memory\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/RunPythonSkill.kt",
+          "lineNumber": 26,
+          "line": "        id = \"run_python\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/GenerateImageSkill.kt",
+          "lineNumber": 45,
+          "line": "        id = \"generate_image\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/RoleManagerSkill.kt",
+          "lineNumber": 40,
+          "line": "        id = \"role_manager\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/PipInstallSkill.kt",
+          "lineNumber": 28,
+          "line": "        id = \"pip_install\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/GenerateIconSkill.kt",
+          "lineNumber": 68,
+          "line": "        id = \"generate_icon\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/RoleWorkspaceSkill.kt",
+          "lineNumber": 20,
+          "line": "        id = \"role_workspace\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/UiBuilderSkill.kt",
+          "lineNumber": 39,
+          "line": "        id = \"ui_builder\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/GenerateDocumentSkill.kt",
+          "lineNumber": 36,
+          "line": "        id = \"generate_document\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SkillNotesSkill.kt",
+          "lineNumber": 16,
+          "line": "        id = \"skill_notes\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/UserProfileSkill.kt",
+          "lineNumber": 26,
+          "line": "        id = \"user_profile\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/SessionManagerSkill.kt",
+          "lineNumber": 32,
+          "line": "        id = \"session_manager\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/UserStorageSkill.kt",
+          "lineNumber": 17,
+          "line": "        id = \"user_storage\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/UserConfigSkill.kt",
+          "lineNumber": 21,
+          "line": "        id = \"user_config\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 107,
+          "line": "        id = \"screenshot\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 133,
+          "line": "        id = \"read_screen\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 163,
+          "line": "        id = \"see_screen\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 219,
+          "line": "        id = \"tap\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 281,
+          "line": "        id = \"input_text\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 312,
+          "line": "        id = \"navigate\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 370,
+          "line": "        id = \"scroll\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 441,
+          "line": "        id = \"long_click\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 501,
+          "line": "        id = \"phone_status\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/BuiltinSkills.kt",
+          "lineNumber": 520,
+          "line": "        id = \"list_apps\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/TownBuilderSkill.kt",
+          "lineNumber": 25,
+          "line": "        id = \"town_builder\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/skill/builtin/TaskRecipeSkill.kt",
+          "lineNumber": 28,
+          "line": "        id = \"task_recipe\","
+        }
+      ]
+    },
+    {
+      "kind": "opendroid-action",
+      "matches": [
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 43,
+          "line": "        override val name: String = \"SOCIAL_SHOW_PERFORMANCE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 64,
+          "line": "        override val name: String = \"SOCIAL_CREATE_POST\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 97,
+          "line": "        override val name: String = \"SOCIAL_SCHEDULE_POST\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 121,
+          "line": "        override val name: String = \"SOCIAL_CHECK_INBOX\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 143,
+          "line": "        override val name: String = \"SOCIAL_DRAFT_REPLIES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 165,
+          "line": "        override val name: String = \"SOCIAL_SHOW_TOP_CONTENT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 188,
+          "line": "        override val name: String = \"SOCIAL_CREATE_REPORT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SocialActions.kt",
+          "lineNumber": 212,
+          "line": "        override val name: String = \"SOCIAL_CREATE_CAMPAIGN\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 38,
+          "line": "        override val name: String = \"PLAY_MUSIC\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 84,
+          "line": "        override val name: String = \"PAUSE_MUSIC\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 97,
+          "line": "        override val name: String = \"RESUME_MUSIC\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 110,
+          "line": "        override val name: String = \"NEXT_TRACK\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 123,
+          "line": "        override val name: String = \"PREV_TRACK\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 136,
+          "line": "        override val name: String = \"SET_VOLUME_MUSIC\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 155,
+          "line": "        override val name: String = \"PLAY_YOUTUBE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 187,
+          "line": "        override val name: String = \"TAKE_PHOTO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MediaActions.kt",
+          "lineNumber": 216,
+          "line": "        override val name: String = \"RECORD_VIDEO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 31,
+          "line": "        override val name: String = \"WEB_SEARCH\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 49,
+          "line": "        override val name: String = \"GET_WEATHER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 123,
+          "line": "        override val name: String = \"GET_NEWS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 141,
+          "line": "        override val name: String = \"CALCULATE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 250,
+          "line": "        override val name: String = \"TRANSLATE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 271,
+          "line": "        override val name: String = \"DEFINE_WORD\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 289,
+          "line": "        override val name: String = \"CONVERT_UNITS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 309,
+          "line": "        override val name: String = \"CURRENCY_CONVERT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 329,
+          "line": "        override val name: String = \"CHECK_STOCK\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 347,
+          "line": "        override val name: String = \"SUMMARIZE_URL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/InformationActions.kt",
+          "lineNumber": 364,
+          "line": "        override val name: String = \"FACT_CHECK\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MacroActions.kt",
+          "lineNumber": 37,
+          "line": "        override val name: String = \"RUN_MACRO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MacroActions.kt",
+          "lineNumber": 64,
+          "line": "        override val name: String = \"CREATE_MACRO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MacroActions.kt",
+          "lineNumber": 87,
+          "line": "        override val name: String = \"SCHEDULE_MACRO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MacroActions.kt",
+          "lineNumber": 118,
+          "line": "        override val name: String = \"DELETE_MACRO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/MacroActions.kt",
+          "lineNumber": 142,
+          "line": "        override val name: String = \"LIST_MACROS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/NotificationActions.kt",
+          "lineNumber": 39,
+          "line": "    override val name: String = \"READ_NOTIFICATIONS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/NotificationActions.kt",
+          "lineNumber": 78,
+          "line": "    override val name: String = \"AUTO_REPLY_TOGGLE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/NotificationActions.kt",
+          "lineNumber": 169,
+          "line": "    override val name: String = \"DISMISS_NOTIFICATION\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FoodShoppingActions.kt",
+          "lineNumber": 25,
+          "line": "        override val name: String = \"ORDER_FOOD\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FoodShoppingActions.kt",
+          "lineNumber": 58,
+          "line": "        override val name: String = \"ORDER_GROCERY\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FoodShoppingActions.kt",
+          "lineNumber": 90,
+          "line": "        override val name: String = \"SEARCH_AMAZON\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FoodShoppingActions.kt",
+          "lineNumber": 118,
+          "line": "        override val name: String = \"SEARCH_FLIPKART\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FoodShoppingActions.kt",
+          "lineNumber": 146,
+          "line": "        override val name: String = \"ADD_TO_CART\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 193,
+          "line": "        override val name: String = \"MAKE_CALL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 216,
+          "line": "        override val name: String = \"SEND_WHATSAPP\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 239,
+          "line": "        override val name: String = \"SEND_TELEGRAM\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 284,
+          "line": "        override val name: String = \"OPEN_TELEGRAM\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 331,
+          "line": "        override val name: String = \"SEND_SMS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 608,
+          "line": "        override val name: String = \"SEND_EMAIL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 632,
+          "line": "        override val name: String = \"SEND_WHATSAPP_GROUP\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 653,
+          "line": "        override val name: String = \"MAKE_VIDEO_CALL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 712,
+          "line": "        override val name: String = \"READ_MESSAGES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CommunicationActions.kt",
+          "lineNumber": 740,
+          "line": "        override val name: String = \"READ_EMAILS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/RoutineActions.kt",
+          "lineNumber": 32,
+          "line": "        override val name: String = \"RUN_ROUTINE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/RoutineActions.kt",
+          "lineNumber": 61,
+          "line": "        override val name: String = \"GET_MORNING_BRIEFING\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/RoutineActions.kt",
+          "lineNumber": 78,
+          "line": "        override val name: String = \"DETECT_ROUTINES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/RoutineActions.kt",
+          "lineNumber": 101,
+          "line": "        override val name: String = \"APPROVE_ROUTINE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SmartHomeActions.kt",
+          "lineNumber": 24,
+          "line": "        override val name: String = \"SMART_HOME\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SmartHomeActions.kt",
+          "lineNumber": 55,
+          "line": "        override val name: String = \"TOGGLE_LIGHT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SmartHomeActions.kt",
+          "lineNumber": 82,
+          "line": "        override val name: String = \"SET_THERMOSTAT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SmartHomeActions.kt",
+          "lineNumber": 101,
+          "line": "        override val name: String = \"LOCK_DOOR\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 119,
+          "line": "        override val name: String = \"CREATE_CALENDAR_EVENT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 157,
+          "line": "        override val name: String = \"SET_ALARM\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 271,
+          "line": "        override val name: String = \"SET_TIMER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 294,
+          "line": "        override val name: String = \"ADD_NOTE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 327,
+          "line": "        override val name: String = \"LIST_CALENDAR_TODAY\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 347,
+          "line": "        override val name: String = \"LIST_CALENDAR_WEEK\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 367,
+          "line": "        override val name: String = \"SET_REMINDER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 394,
+          "line": "        override val name: String = \"CREATE_TASK\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 419,
+          "line": "        override val name: String = \"READ_NOTES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 457,
+          "line": "        override val name: String = \"READ_AND_REMEMBER_SCREEN\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 503,
+          "line": "        override val name: String = \"RECALL_MEMORY\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 532,
+          "line": "        override val name: String = \"QUERY_KNOWLEDGE_GRAPH\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 573,
+          "line": "        override val name: String = \"UPDATE_PREFERENCE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/CalendarActions.kt",
+          "lineNumber": 601,
+          "line": "        override val name: String = \"SAVE_SENSITIVE_INFO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FinanceActions.kt",
+          "lineNumber": 23,
+          "line": "        override val name: String = \"PAY_UPI\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FinanceActions.kt",
+          "lineNumber": 86,
+          "line": "        override val name: String = \"CHECK_BALANCE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/FinanceActions.kt",
+          "lineNumber": 109,
+          "line": "        override val name: String = \"SPLIT_BILL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/TransportActions.kt",
+          "lineNumber": 26,
+          "line": "        override val name: String = \"BOOK_UBER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/TransportActions.kt",
+          "lineNumber": 60,
+          "line": "        override val name: String = \"BOOK_OLA\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/TransportActions.kt",
+          "lineNumber": 87,
+          "line": "        override val name: String = \"GET_DIRECTIONS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/TransportActions.kt",
+          "lineNumber": 133,
+          "line": "        override val name: String = \"CHECK_TRAFFIC\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/TransportActions.kt",
+          "lineNumber": 157,
+          "line": "        override val name: String = \"CHECK_FLIGHT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/TransportActions.kt",
+          "lineNumber": 175,
+          "line": "        override val name: String = \"TRACK_DELIVERY\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 85,
+          "line": "        override val name: String = \"GET_SYSTEM_INFO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 141,
+          "line": "        override val name: String = \"SET_RINGER_MODE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 164,
+          "line": "        override val name: String = \"LIST_FILES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 173,
+          "line": "        override val name: String = \"READ_FILE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 182,
+          "line": "        override val name: String = \"WRITE_FILE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 192,
+          "line": "        override val name: String = \"DELETE_FILE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 201,
+          "line": "        override val name: String = \"TAKE_PHOTO_BACKGROUND\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 359,
+          "line": "        override val name: String = \"LIST_INSTALLED_APPS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 377,
+          "line": "        override val name: String = \"CLOSE_APP\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 385,
+          "line": "        override val name: String = \"CLICK_TEXT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 394,
+          "line": "        override val name: String = \"CLICK_ID\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 403,
+          "line": "        override val name: String = \"TYPE_TEXT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 419,
+          "line": "        override val name: String = \"TYPE_ID\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 429,
+          "line": "        override val name: String = \"SCROLL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 439,
+          "line": "        override val name: String = \"GET_SCREEN_TEXT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 447,
+          "line": "        override val name: String = \"CLICK_COORDINATES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 457,
+          "line": "        override val name: String = \"PRESS_ENTER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 465,
+          "line": "        override val name: String = \"WAIT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 475,
+          "line": "        override val name: String = \"CREATE_DIRECTORY\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 484,
+          "line": "        override val name: String = \"COPY_FILE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 494,
+          "line": "        override val name: String = \"MOVE_FILE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 504,
+          "line": "        override val name: String = \"ZIP_FILES\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/AdvancedControlActions.kt",
+          "lineNumber": 514,
+          "line": "        override val name: String = \"UNZIP_FILE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 70,
+          "line": "    override val name: String = \"TOGGLE_BLUETOOTH\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 176,
+          "line": "    override val name: String = \"TOGGLE_DND\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 284,
+          "line": "        override val name: String = \"TOGGLE_FLASHLIGHT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 340,
+          "line": "        override val name: String = \"SET_VOLUME\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 375,
+          "line": "        override val name: String = \"SET_BRIGHTNESS\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 405,
+          "line": "        override val name: String = \"OPEN_APP\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 452,
+          "line": "        override val name: String = \"LOCK_SCREEN\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 468,
+          "line": "        override val name: String = \"RESTART_DEVICE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 481,
+          "line": "        override val name: String = \"TAKE_SCREENSHOT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 499,
+          "line": "        override val name: String = \"CONFIRM_ACTION\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 522,
+          "line": "        override val name: String = \"CHECK_APP\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 560,
+          "line": "        override val name: String = \"SHOW_WARNING\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 581,
+          "line": "        override val name: String = \"SET_WALLPAPER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 597,
+          "line": "        override val name: String = \"RECORD_SCREEN\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 605,
+          "line": "        override val name: String = \"INSTALL_APP\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 629,
+          "line": "        override val name: String = \"CHECK_HARDWARE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 662,
+          "line": "        override val name: String = \"CHECK_PERMISSION\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 698,
+          "line": "        override val name: String = \"VERIFY_CONTACT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 753,
+          "line": "        override val name: String = \"PROMPT_USER_SELECTION\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 852,
+          "line": "        override val name: String = \"GET_SYSTEM_INFO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 862,
+          "line": "        override val name: String = \"ASK_USER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 883,
+          "line": "        override val name: String = \"DISPLAY_INFO\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 915,
+          "line": "        override val name: String = \"ANALYZE_SCREENSHOT\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 929,
+          "line": "        override val name: String = \"SET_RINGER_MODE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 959,
+          "line": "        override val name: String = \"CLEAR_CLIPBOARD\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 977,
+          "line": "        override val name: String = \"COPY_TO_CLIPBOARD\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 993,
+          "line": "        override val name: String = \"GET_CLIPBOARD\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 1014,
+          "line": "        override val name: String = \"OPEN_BROWSER\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 1037,
+          "line": "        override val name: String = \"OPEN_URL\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 1059,
+          "line": "        override val name: String = \"ENABLE_PRIVATE_MODE\""
+        },
+        {
+          "path": "inmyfeelings/_refs/opendroid/app/src/main/java/com/opendroid/ai/actions/SystemActions.kt",
+          "lineNumber": 1091,
+          "line": "        override val name: String = \"CLEAR_BROWSER_DATA\""
+        }
+      ]
+    },
+    {
+      "kind": "vpn-skill",
+      "matches": [
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/vpn/VpnControlSkill.kt",
+          "lineNumber": 5,
+          "line": "import com.mobileclaw.skill.SkillParam"
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/vpn/VpnControlSkill.kt",
+          "lineNumber": 16,
+          "line": "        id = \"vpn_control\","
+        },
+        {
+          "path": "inmyfeelings/_refs/mobileClaw/app/src/main/java/com/mobileclaw/vpn/VpnControlSkill.kt",
+          "lineNumber": 23,
+          "line": "            SkillParam(\"action\", \"string\", \"'start' | 'stop' | 'status'\"),"
+        }
+      ]
+    },
+    {
+      "kind": "dsh-packages",
+      "matches": [
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 164,
+          "line": "    \"@deepseek-ai/dsh-experimental-auto-review\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 186,
+          "line": "    \"@deepseek-ai/dsh-experimental-liveshare\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 187,
+          "line": "    \"@deepseek-ai/dsh-experimental-liveshare-protocol\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 204,
+          "line": "    \"@deepseek-ai/dsh-experimental-worktree\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 207,
+          "line": "    \"@deepseek-ai/dsh-fs\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 208,
+          "line": "    \"@deepseek-ai/dsh-fs-local\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 209,
+          "line": "    \"@deepseek-ai/dsh-fs-observation-policy\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 210,
+          "line": "    \"@deepseek-ai/dsh-fs-patch\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 211,
+          "line": "    \"@deepseek-ai/dsh-fs-sandbox\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 212,
+          "line": "    \"@deepseek-ai/dsh-fs-ssh\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 213,
+          "line": "    \"@deepseek-ai/dsh-goal\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 214,
+          "line": "    \"@deepseek-ai/dsh-goal-round-driver\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 236,
+          "line": "    \"@deepseek-ai/dsh-llm\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 237,
+          "line": "    \"@deepseek-ai/dsh-llm-deepseek\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 238,
+          "line": "    \"@deepseek-ai/dsh-llm-deepseek-account\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 239,
+          "line": "    \"@deepseek-ai/dsh-llm-deepseek-api-key\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 240,
+          "line": "    \"@deepseek-ai/dsh-llm-pi-ai\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 241,
+          "line": "    \"@deepseek-ai/dsh-llm-retry\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 244,
+          "line": "    \"@deepseek-ai/dsh-mcp-client\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 245,
+          "line": "    \"@deepseek-ai/dsh-mcp-manager\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 246,
+          "line": "    \"@deepseek-ai/dsh-mcp-resources\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 258,
+          "line": "    \"@deepseek-ai/dsh-plan-mode\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 265,
+          "line": "    \"@deepseek-ai/dsh-ptc-runtime\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 266,
+          "line": "    \"@deepseek-ai/dsh-ptc-runtime-node\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 271,
+          "line": "    \"@deepseek-ai/dsh-sandbox\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 272,
+          "line": "    \"@deepseek-ai/dsh-sandbox-local\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 273,
+          "line": "    \"@deepseek-ai/dsh-sandbox-policy\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 274,
+          "line": "    \"@deepseek-ai/dsh-sandbox-ssh\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 275,
+          "line": "    \"@deepseek-ai/dsh-sandbox-windows-acl\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 276,
+          "line": "    \"@deepseek-ai/dsh-schedule\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 283,
+          "line": "    \"@deepseek-ai/dsh-session\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 284,
+          "line": "    \"@deepseek-ai/dsh-session-checkpoint-policy\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 285,
+          "line": "    \"@deepseek-ai/dsh-session-format\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 286,
+          "line": "    \"@deepseek-ai/dsh-session-format-catalog\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 287,
+          "line": "    \"@deepseek-ai/dsh-session-format-v0-to-v1\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 288,
+          "line": "    \"@deepseek-ai/dsh-session-format-v1-to-v2\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 289,
+          "line": "    \"@deepseek-ai/dsh-session-format-v2-to-v3\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 290,
+          "line": "    \"@deepseek-ai/dsh-session-format-v3-to-v4\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 291,
+          "line": "    \"@deepseek-ai/dsh-session-log-deepseek\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 292,
+          "line": "    \"@deepseek-ai/dsh-session-log-export\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 293,
+          "line": "    \"@deepseek-ai/dsh-session-persistence\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 294,
+          "line": "    \"@deepseek-ai/dsh-session-persistence-jsonl\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 295,
+          "line": "    \"@deepseek-ai/dsh-session-projection\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 296,
+          "line": "    \"@deepseek-ai/dsh-session-projection-cache\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 297,
+          "line": "    \"@deepseek-ai/dsh-session-query\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 298,
+          "line": "    \"@deepseek-ai/dsh-session-query-sqlite\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 299,
+          "line": "    \"@deepseek-ai/dsh-session-reference\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 300,
+          "line": "    \"@deepseek-ai/dsh-session-stats\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 301,
+          "line": "    \"@deepseek-ai/dsh-session-telemetry\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 302,
+          "line": "    \"@deepseek-ai/dsh-session-telemetry-otel\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 303,
+          "line": "    \"@deepseek-ai/dsh-session-title\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 304,
+          "line": "    \"@deepseek-ai/dsh-session-title-all-prompts-llm\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 305,
+          "line": "    \"@deepseek-ai/dsh-session-title-first-prompt-llm\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 306,
+          "line": "    \"@deepseek-ai/dsh-session-title-llm\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 307,
+          "line": "    \"@deepseek-ai/dsh-session-turn-outline\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 323,
+          "line": "    \"@deepseek-ai/dsh-subagent\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 324,
+          "line": "    \"@deepseek-ai/dsh-subagent-acp\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 325,
+          "line": "    \"@deepseek-ai/dsh-subagent-claude-code\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 326,
+          "line": "    \"@deepseek-ai/dsh-subagent-codex\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 327,
+          "line": "    \"@deepseek-ai/dsh-subagent-dsh-sdk\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 328,
+          "line": "    \"@deepseek-ai/dsh-subagent-fork-in-process\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 329,
+          "line": "    \"@deepseek-ai/dsh-subagent-spawn-in-process\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 341,
+          "line": "    \"@deepseek-ai/dsh-tool-agent-team\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 342,
+          "line": "    \"@deepseek-ai/dsh-tool-ask-user\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 343,
+          "line": "    \"@deepseek-ai/dsh-tool-bash\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 344,
+          "line": "    \"@deepseek-ai/dsh-tool-bash-persistent\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 345,
+          "line": "    \"@deepseek-ai/dsh-tool-call-timeout-policy\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 346,
+          "line": "    \"@deepseek-ai/dsh-tool-cordis\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 347,
+          "line": "    \"@deepseek-ai/dsh-tool-executor-native\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 348,
+          "line": "    \"@deepseek-ai/dsh-tool-executor-ptc\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 349,
+          "line": "    \"@deepseek-ai/dsh-tool-fs\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 350,
+          "line": "    \"@deepseek-ai/dsh-tool-fs-search\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 351,
+          "line": "    \"@deepseek-ai/dsh-tool-goal\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 352,
+          "line": "    \"@deepseek-ai/dsh-tool-jobs\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 353,
+          "line": "    \"@deepseek-ai/dsh-tool-lsp\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 354,
+          "line": "    \"@deepseek-ai/dsh-tool-office\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 355,
+          "line": "    \"@deepseek-ai/dsh-tool-present\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 356,
+          "line": "    \"@deepseek-ai/dsh-tool-pwsh\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 357,
+          "line": "    \"@deepseek-ai/dsh-tool-pwsh-persistent\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 358,
+          "line": "    \"@deepseek-ai/dsh-tool-ralph\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 359,
+          "line": "    \"@deepseek-ai/dsh-tool-schedule\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 360,
+          "line": "    \"@deepseek-ai/dsh-tool-session-query\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 361,
+          "line": "    \"@deepseek-ai/dsh-tool-skill\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 362,
+          "line": "    \"@deepseek-ai/dsh-tool-str-replace-editor\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 363,
+          "line": "    \"@deepseek-ai/dsh-tool-subagent\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 364,
+          "line": "    \"@deepseek-ai/dsh-tool-subagent-control\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 365,
+          "line": "    \"@deepseek-ai/dsh-tool-terminal\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 366,
+          "line": "    \"@deepseek-ai/dsh-tool-testkit\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 367,
+          "line": "    \"@deepseek-ai/dsh-tool-todo\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 368,
+          "line": "    \"@deepseek-ai/dsh-tool-web\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 369,
+          "line": "    \"@deepseek-ai/dsh-tool-workflow\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 370,
+          "line": "    \"@deepseek-ai/dsh-tool-working-directory\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 371,
+          "line": "    \"@deepseek-ai/dsh-tool-workspace-dependencies\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 372,
+          "line": "    \"@deepseek-ai/dsh-tools\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 389,
+          "line": "    \"@deepseek-ai/dsh-web-fetch-http\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 391,
+          "line": "    \"@deepseek-ai/dsh-web-search-deepseek\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 395,
+          "line": "    \"@deepseek-ai/dsh-workflow\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 396,
+          "line": "    \"@deepseek-ai/dsh-workflow-ptc\": \"0.2.2-rc.3\","
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 518,
+          "line": "    \"@deepseek-ai/dsh-session-telemetry-otel\": {"
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 527,
+          "line": "    \"@deepseek-ai/dsh-experimental-liveshare\": {"
+        },
+        {
+          "path": "inmyfeelings/_refs/dsh-mobile-apk-main/scripts/snapshot-config/engine-overlay.json",
+          "lineNumber": 537,
+          "line": "    \"@deepseek-ai/dsh-tool-subagent-report (0.1.1-rc.2)\","
+        }
+      ]
+    }
+  ]
+}

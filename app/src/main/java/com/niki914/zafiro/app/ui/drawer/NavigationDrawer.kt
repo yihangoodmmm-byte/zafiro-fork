@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -62,6 +63,7 @@ fun NavigationDrawerOverlay(
     onNewConversation: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenBrowser: () -> Unit,
 ) {
     if (!visible) return
 
@@ -73,6 +75,10 @@ fun NavigationDrawerOverlay(
         DrawerEntry(Icons.Default.History, R.string.ui_drawer_history) {
             onDismiss()
             onOpenHistory()
+        },
+        DrawerEntry(Icons.Default.Language, R.string.browser_title) {
+            onDismiss()
+            onOpenBrowser()
         },
         DrawerEntry(Icons.Default.Settings, R.string.ui_drawer_settings) {
             onDismiss()

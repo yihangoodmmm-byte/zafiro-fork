@@ -1,5 +1,6 @@
 package com.niki914.zafiro.chat.agentic.buildin.impl
 
+import com.niki914.zafiro.chat.agentic.ScreenOperationCoordinator
 import com.niki914.zafiro.chat.agentic.accessibility.AccessibilityController
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
@@ -33,7 +34,10 @@ class ScreenOperationShellBuiltin : TextResultBuiltinTool() {
 
     override val inputSchemaJson: String? get() = SCREEN_SHELL_SCHEMA
 
-    override suspend fun invokeText(request: BuiltinToolRequest): TextToolResult {
+    override suspend fun invokeText(request: BuiltinToolRequest): TextToolResult =
+        ScreenOperationCoordinator.execute { invokeScreen(request) }
+
+    private suspend fun invokeScreen(request: BuiltinToolRequest): TextToolResult {
         AccessibilityController.ensurePointerShown()
 
         val args = parseArguments(request.argumentsJson).getOrElse { error ->

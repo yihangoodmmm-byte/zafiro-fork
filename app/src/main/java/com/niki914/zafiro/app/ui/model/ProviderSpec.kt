@@ -151,7 +151,7 @@ private data object GoogleSpec : ProviderSpec {
     // （不提供 gemini-native；google-openai 与 openai-chat-completions 同壳，
     //  差异是工具调用签名回带，故 Google 必须预填 google-openai）
     override val defaultProtocol: String = "google-openai"
-    override val iconRes: Int = R.drawable.gemini
+    override val iconRes: Int = R.drawable.ic_google_provider
     override val tintIcon: Boolean = false
     override val visualTokens: ProviderVisualTokens = ProviderVisualTokens(
         button = ProviderButtonTokens(),

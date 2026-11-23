@@ -1,5 +1,6 @@
 package com.niki914.zafiro.chat.agentic.buildin
 
+import com.niki914.zafiro.chat.agentic.buildin.impl.BrowserBuiltin
 import com.niki914.zafiro.chat.agentic.buildin.impl.ExecutePythonBuiltin
 import com.niki914.zafiro.chat.agentic.buildin.impl.FindInstalledAppsBuiltin
 import com.niki914.zafiro.chat.agentic.buildin.impl.LaunchAppBuiltin
@@ -18,6 +19,10 @@ import com.niki914.zafiro.chat.agentic.buildin.impl.ViewImageBuiltin
 class BuiltinToolRegistry(
     private val tools: List<BuiltinTool>,
 ) {
+    init {
+        require(tools.map { it.name }.distinct().size == tools.size) { "Duplicate builtin tool name." }
+    }
+
     fun all(): List<BuiltinTool> = tools
 
     fun find(name: String): BuiltinTool? {
@@ -41,7 +46,7 @@ class BuiltinToolRegistry(
                 ScreenOperationShellBuiltin(),
                 ScreenshotBuiltin(),
                 ViewImageBuiltin(),
-            )
+            ) + BrowserBuiltin.definitions.map { (name, command) -> BrowserBuiltin(name, command) }
         )
     }
 }

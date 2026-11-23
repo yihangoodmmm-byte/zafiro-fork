@@ -10,6 +10,8 @@ import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.zafiro.chat.agentic.buildin.RawJsonBuiltinTool
 import com.niki914.zafiro.chat.agentic.buildin.TextToolResult
 import com.niki914.zafiro.chat.agentic.stream.ParsedToolResult
+import com.niki914.zafiro.platform.browser.BrowserService
+import com.niki914.zafiro.service.findService
 import com.niki914.zafiro.settings.model.RuntimeMcpServiceConfig
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -35,6 +37,10 @@ class McpToolAdapter(
 ) {
     private companion object {
         private const val LOG_TAG = "niki914_zafiro_McpToolAdapter"
+    }
+
+    suspend fun closeBrowserResources() {
+        findService<BrowserService>()?.closeOwner(tenantId)
     }
 
     fun buildServer(config: RuntimeMcpServiceConfig): Server {
@@ -146,7 +152,7 @@ class McpToolAdapter(
         val isLikelyJson = (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
                 (trimmed.startsWith("[") && trimmed.endsWith("]"))
         if (isLikelyJson) {
-            val isValid = runCatching { Json.parseToJsonElement(trimmed) }.isSuccess
+            val isValid = try { Json.parseToJsonElement(trimmed); true } catch (_: IllegalArgumentException) { false }
             if (isValid) {
                 return trimmed
             }

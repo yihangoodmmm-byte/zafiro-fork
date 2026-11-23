@@ -14,6 +14,8 @@ import com.niki914.zafiro.api.AgentControl
 import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.FileRef
 import com.niki914.zafiro.api.model.WorkspaceDirectory
+import com.niki914.zafiro.platform.browser.BrowserService
+import com.niki914.zafiro.service.findService
 import com.niki914.zafiro.chat.compaction.Compactor
 import com.niki914.zafiro.chat.agentic.ChatTurnPrompt
 import com.niki914.zafiro.chat.agentic.IngestedImage
@@ -311,6 +313,7 @@ class AgentSessionEngine {
     suspend fun openSession(restore: SessionSnapshot) {
         val startedAtMs = System.currentTimeMillis()
         prefixComposer.reset()
+        findService<BrowserService>()?.closeOwner(tenantId)
         Logger.i(
             LOG_TAG,
             "open session id=${restore.id} entries=${restore.entries.size} started"
@@ -454,6 +457,7 @@ class AgentSessionEngine {
     suspend fun closeSession() {
         Logger.i(LOG_TAG, "close session requested tenantId=$tenantId")
         TerminalSessionPool.closeTenantSessions(tenantId)
+        findService<BrowserService>()?.closeOwner(tenantId)
         sessionAssembler.closeSession()
         prefixComposer.reset()
         runtimeState = null
@@ -463,6 +467,7 @@ class AgentSessionEngine {
 
     suspend fun resetConversation() {
         Logger.i(LOG_TAG, "reset conversation requested")
+        findService<BrowserService>()?.closeOwner(tenantId)
         sessionAssembler.resetConversation()
         prefixComposer.reset()
         runtimeState = null

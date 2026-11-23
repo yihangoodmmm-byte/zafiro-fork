@@ -51,7 +51,19 @@ class LocalToolExecutor(
         const val CUSTOM_PY_TOOL_NAME_PATTERN = """^[a-z][a-z0-9_]{0,63}$"""
     }
 
+    private val callLedger = ToolCallLedger(tenantId.ifBlank { "executor-local" })
+
     override suspend fun execute(call: ToolCallContext): ToolCallOutcome {
+        return when (val result = callLedger.execute(call.id, call.name, call.argumentsJson) { executeOnce(call) }) {
+            is ToolCallLedger.Result.Output -> decodeOutcome(result.raw)
+            is ToolCallLedger.Result.Refused -> ToolCallOutcome.Failure(
+                message = result.message,
+                content = BuiltinToolResult.failure(result.code, result.message).toJsonString(),
+            )
+        }
+    }
+
+    private suspend fun executeOnce(call: ToolCallContext): String {
         val control = agentControlProvider?.invoke()
         val workspacePath = workspacePathProvider()
         val context = if (tenantId.isNotBlank() || control != null || workspacePath != null) {
@@ -69,7 +81,7 @@ class LocalToolExecutor(
         if (call.name == PY_META_TOOLS_NAME) {
             registerInlinePyIfWritten(call, raw)
         }
-        return decodeOutcome(raw)
+        return raw
     }
 
     // TODO: 如果工具执行过程中已有部分流式输出，中断时应保留并拼接部分输出（如 "$partial\n\n[Tool execution was interrupted by user.]"）
@@ -216,10 +228,14 @@ class LocalToolExecutor(
             inputSchemaJson = data["schema_json"]?.jsonPrimitive?.contentOrNull,
             timeoutMs = data["timeout_ms"]?.jsonPrimitive?.longOrNull ?: 30_000L,
         )
-        inlineCustomPyTools[name] = tool
+        if (currentTools()?.builtinTools.orEmpty().any { it.name == name }) {
+            Logger.w(LOG_TAG, "custom tool conflicts with builtin name=$name")
+            return
+        }
         // host 注册回调（LLMController → OkiaConfig.toolRegistry）
         try {
             onCustomPyToolWritten(tool)
+            inlineCustomPyTools[name] = tool
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) throw throwable
             Logger.w(

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="browser_title">AI 浏览器</string>
+    <string name="browser_tools_summary">隔离分页、网页快照、节点交互、截图与人工接管</string>
+    <string name="browser_address">网页地址</string>
+    <string name="browser_open">新建分页</string>
+    <string name="browser_empty">尚无分页。可手动打开网页，或让 Agent 使用 browser_open。</string>
+    <string name="browser_take_control">人工接管</string>
+    <string name="browser_release_control">交还 Agent</string>
+    <string name="browser_close">关闭分页</string>
+    <string name="browser_isolation_notice">分页按 Agent 隔离。查看其他分页不会切换 Agent 的执行目标；接管后才允许手动操作。</string>
+</resources>

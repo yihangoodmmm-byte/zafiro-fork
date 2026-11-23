@@ -3,6 +3,8 @@ package com.niki914.zafiro.app
 import android.app.Application
 import android.content.ComponentName
 import com.niki914.xsettings.XSettings
+import com.niki914.zafiro.app.browser.AndroidBrowserService
+import com.niki914.zafiro.platform.browser.BrowserService
 import com.niki914.zafiro.api.AgentControl
 import com.niki914.zafiro.api.AgentManager
 import com.niki914.zafiro.api.McpService
@@ -59,6 +61,7 @@ object AppServices {
         )
         // 附件落地（SAF uri → 真实路径 + 全局文件访问权）：自持 PermissionManager，零构造参数
         installService<FilesService>(FilesServiceImpl())
+        installService<BrowserService>(AndroidBrowserService(application))
         installService<NotificationChannelManager>(NotificationChannelManagerImpl(application))
 
         // 本地配置读取口：给 app 以外的模块按需取用

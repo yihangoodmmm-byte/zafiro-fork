@@ -49,11 +49,13 @@ internal class ToolRegistrySynchronizer(
      * 再注册当前 resolved 的 enabled 工具。
      */
     fun syncLocalTools(tools: ResolvedTools) {
+        val localTools = tools.builtinTools + tools.customPyTools
+        require(localTools.map { it.name }.distinct().size == localTools.size) { "Conflicting local tool names; rename the custom tool." }
         toolRegistry.snapshot()
             .map { it.descriptor }
             .filter { it.kind is ToolKind.Local }
             .forEach { toolRegistry.remove(it.wireName) }
-        (tools.builtinTools + tools.customPyTools).forEach { tool ->
+        localTools.forEach { tool ->
             val inputSchemaJson = when (tool) {
                 is LocalTool.Builtin -> tool.tool.inputSchemaJson
                 is LocalTool.Py -> tool.inputSchemaJson
@@ -75,6 +77,7 @@ internal class ToolRegistrySynchronizer(
      * py_meta_tools write 成功且 enabled 的回合内注册（D20）：立即注册进 registry。
      */
     fun registerCustomPyToolNow(tool: LocalTool.Py) {
+        require(currentTools()?.builtinTools.orEmpty().none { it.name == tool.name }) { "Custom tool conflicts with a builtin tool." }
         toolRegistry.register(
             ToolDescriptor(
                 name = tool.name,

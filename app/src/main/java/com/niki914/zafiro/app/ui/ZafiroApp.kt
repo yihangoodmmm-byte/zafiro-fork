@@ -71,6 +71,7 @@ import com.niki914.zafiro.app.ui.drawer.NavigationDrawerOverlay
 import com.niki914.zafiro.app.ui.model.home.HomeStartRequests
 import com.niki914.zafiro.app.ui.nav.ConversationHistoryPage
 import com.niki914.zafiro.app.ui.nav.HomePage
+import com.niki914.zafiro.app.ui.nav.BrowserWorkbenchPage
 import com.niki914.zafiro.app.ui.nav.SettingsHomePage
 import com.niki914.zafiro.app.ui.nav.NoTitle
 import com.niki914.zafiro.app.ui.nav.PageTitleSpec
@@ -467,6 +468,7 @@ fun ZafiroApp(
                                 isDrawerOpen = false
                                 pushFromLeft(ConversationHistoryPage)
                             },
+                            onOpenBrowser = { push(BrowserWorkbenchPage) },
                             onOpenSettings = {
                                 isDrawerOpen = false
                                 push(SettingsHomePage)

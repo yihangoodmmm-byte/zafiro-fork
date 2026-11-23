@@ -13,6 +13,8 @@ import com.niki914.zafiro.app.ui.nav.CustomPyToolsPage
 import com.niki914.zafiro.app.ui.nav.DonePage
 import com.niki914.zafiro.app.ui.nav.ExecutionRuleDetailPage
 import com.niki914.zafiro.app.ui.nav.HomePage
+import com.niki914.zafiro.app.ui.nav.BrowserWorkbenchPage
+import com.niki914.zafiro.app.ui.content.BrowserWorkbenchContent
 import com.niki914.zafiro.app.ui.nav.MarkdownScalePage
 import com.niki914.zafiro.app.ui.nav.McpServerDetailPage
 import com.niki914.zafiro.app.ui.nav.OnboardingPreferencesPage
@@ -70,6 +72,8 @@ fun ZafiroPageContent(
     onCurrentConversationDeleted: suspend (String) -> Unit,
 ) {
     when (val page = entry.page) {
+        BrowserWorkbenchPage -> BrowserWorkbenchContent()
+
         StartupPage -> StartupPageRoute(
             startupAssistantUi = startupAssistantUi,
             onPush = onPush,

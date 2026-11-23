@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="browser_title">AI browser</string>
+    <string name="browser_tools_summary">Isolated tabs, page snapshots, node actions, screenshots and manual takeover</string>
+    <string name="browser_address">Page URL</string>
+    <string name="browser_open">New tab</string>
+    <string name="browser_empty">No tabs. Open a page here or ask the agent to use browser_open.</string>
+    <string name="browser_take_control">Take control</string>
+    <string name="browser_release_control">Release control</string>
+    <string name="browser_close">Close tab</string>
+    <string name="browser_isolation_notice">Tabs are isolated per agent. Viewing a tab does not change the execution target. Take control to interact manually.</string>
+</resources>

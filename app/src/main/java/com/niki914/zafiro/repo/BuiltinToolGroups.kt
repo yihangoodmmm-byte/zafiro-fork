@@ -3,6 +3,7 @@ package com.niki914.zafiro.repo
 import androidx.annotation.StringRes
 import com.niki914.zafiro.app.R
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRegistry
+import com.niki914.zafiro.chat.agentic.buildin.impl.BrowserBuiltin
 
 enum class BuiltinToolGroupMode {
     // 绑定式：一级页 Switch 写穿全组成员，成员无独立入口
@@ -26,6 +27,13 @@ object BuiltinToolGroups {
     private val registry = BuiltinToolRegistry.default()
 
     val all: List<BuiltinToolGroup> = listOf(
+        BuiltinToolGroup(
+            id = "browser",
+            titleRes = R.string.browser_title,
+            summaryRes = R.string.browser_tools_summary,
+            mode = BuiltinToolGroupMode.PER_TOOL,
+            members = BrowserBuiltin.definitions.map { it.first },
+        ),
         BuiltinToolGroup(
             id = "dev_tools",
             titleRes = R.string.tool_group_dev_tools,
