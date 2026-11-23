@@ -200,6 +200,7 @@ fun HomeChatUiState.withClearedTransient() = copy(
 
 sealed interface HomeChatIntent {
     data class InputChanged(val value: String) : HomeChatIntent
+    data class AppendProjectReference(val value: String) : HomeChatIntent
     data object Send : HomeChatIntent
     data object Warmup : HomeChatIntent
 

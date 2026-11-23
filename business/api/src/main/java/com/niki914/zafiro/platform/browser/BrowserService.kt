@@ -32,6 +32,8 @@ data class BrowserTabState(
     val humanControl: Boolean,
     val viewport: String,
     val error: String? = null,
+    val canGoBack: Boolean = false,
+    val canGoForward: Boolean = false,
 )
 
 data class BrowserNode(

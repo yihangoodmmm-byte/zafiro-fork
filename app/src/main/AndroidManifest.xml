@@ -24,6 +24,11 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+
+        <!-- 朗读回复的 TTS 引擎（TextToSpeech 绑定需要 30+ 声明可见性） -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <application

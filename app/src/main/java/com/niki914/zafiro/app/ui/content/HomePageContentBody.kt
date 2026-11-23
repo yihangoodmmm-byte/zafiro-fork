@@ -2,6 +2,11 @@ package com.niki914.zafiro.app.ui.content
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.speech.RecognizerIntent
+import android.widget.Toast
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +16,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +31,7 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,9 +74,11 @@ import com.niki914.zafiro.app.ui.chat.helper.userGroupText
 import com.niki914.zafiro.app.ui.content.composer.LiquidChatComposer
 import com.niki914.zafiro.app.ui.content.helper.CameraTarget
 import com.niki914.zafiro.app.ui.content.helper.GrantingTakePicture
+import com.niki914.zafiro.app.ui.content.helper.HomeReadoutController
 import com.niki914.zafiro.app.ui.content.helper.createCameraTarget
 import com.niki914.zafiro.app.ui.content.helper.isImportableImage
 import com.niki914.zafiro.app.ui.model.home.ActionSource
+import com.niki914.zafiro.app.ui.model.home.HomeChatBlock
 import com.niki914.zafiro.app.ui.model.home.HomeChatFile
 import com.niki914.zafiro.app.ui.model.home.HomeChatImage
 import com.niki914.zafiro.app.ui.model.home.HomeChatUiState
@@ -82,7 +91,7 @@ private const val ATTACH_LOG_TAG = "niki914_zafiro_Attach"
 /** 图片多选的张数上限。远低于系统的 getPickImagesMaxLimit()，取一个够用且不炸上下文的数。 */
 private const val PHOTO_PICK_MAX_ITEMS = 10
 
-private enum class ComposerPanel { Attachments, Workspace, TaskOptions }
+private enum class ComposerPanel { Attachments, Workspace, TaskOptions, ReasoningEffort }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -122,6 +131,9 @@ internal fun HomePageContentBody(
     onToggleActionKey: (key: String, isExpanded: Boolean) -> Unit = { _, _ -> },
     onWorkspaceSelected: (String) -> Unit = {},
     onClearWorkspace: () -> Unit = {},
+    isCurrentPage: Boolean = true,
+    onOpenProject: () -> Unit = {},
+    onOpenRuns: () -> Unit = {},
     onToggleWorkflow: () -> Unit = {},
     onToggleReasoningGuide: () -> Unit = {},
     onSelectReasoningEffort: (ChatReasoningEffort?) -> Unit = {},
@@ -134,6 +146,17 @@ internal fun HomePageContentBody(
     val chatBackdrop = rememberLayerBackdrop()
 
     val context = LocalContext.current
+    var readoutTurn by remember(context, uiState.currentConversationId, isCurrentPage) { mutableStateOf<Long?>(null) }
+    val readout = remember(context, uiState.currentConversationId, isCurrentPage) {
+        HomeReadoutController(context) {
+            readoutTurn = null
+            Toast.makeText(context, R.string.ui_voice_read_unavailable, Toast.LENGTH_SHORT).show()
+        }
+    }
+    DisposableEffect(readout) {
+        onDispose { readout.close() }
+    }
+    var voiceTarget by remember { mutableStateOf<Pair<String?, Int>?>(null) }
     var panel by rememberSaveable { mutableStateOf<ComposerPanel?>(null) }
     var workspacePathDialog by rememberSaveable { mutableStateOf(false) }
     var workspaceDraft by rememberSaveable { mutableStateOf("") }
@@ -167,6 +190,19 @@ internal fun HomePageContentBody(
             val asImage = isImportableImage(context, uri, type)
             Logger.i(ATTACH_LOG_TAG, "file picked uri=$uri type=$type asImage=$asImage")
             if (asImage) onImageAttached(uri.toString()) else onFileAttached(uri.toString())
+        }
+    }
+    val voicePicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val target = voiceTarget
+        voiceTarget = null
+        if (result.resultCode == Activity.RESULT_OK &&
+            target == (uiState.currentConversationId to uiState.conversationVersion) && isCurrentPage
+        ) {
+            val phrase = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()?.trim()?.take(4000).orEmpty()
+            if (phrase.isNotEmpty() && !uiState.isLoadingConversation) {
+                onInputChange(listOf(uiState.input, phrase).filter { it.isNotBlank() }.joinToString("\n"))
+            }
         }
     }
     val folderPicker = rememberLauncherForActivityResult(
@@ -217,7 +253,7 @@ internal fun HomePageContentBody(
                     ),
                 contentPadding = PaddingValues(
                     start = 20.dp,
-                    top = liquidScreenTopPadding(24.dp),
+                    top = liquidScreenTopPadding(68.dp),
                     end = 20.dp,
                     bottom = bottomClearance,
                 ),
@@ -239,6 +275,11 @@ internal fun HomePageContentBody(
                             else ->
                                 TurnSeparatorSpacing()
                         }
+                        val reply = remember(turn.blocks) {
+                            turn.blocks.filterIsInstance<HomeChatBlock.Text>().joinToString("\n\n") { it.text }
+                        }
+                        val canRead = isCurrentPage && reply.isNotBlank() &&
+                            !(uiState.isGenerating && index == uiState.turns.lastIndex)
                         HomeChatTurnItem(
                             turn = turn,
                             userBubblePosition = position,
@@ -251,6 +292,18 @@ internal fun HomePageContentBody(
                             onReGenerate = onReGenerate,
                             onFork = onFork,
                             onRewind = onRewind,
+                            isReadingAloud = readoutTurn == turn.id,
+                            onReadAloud = if (!canRead) null else {
+                                {
+                                    if (readoutTurn == turn.id) {
+                                        readout.stop()
+                                        readoutTurn = null
+                                    } else {
+                                        readoutTurn = turn.id
+                                        readout.speak(reply) { readoutTurn = null }
+                                    }
+                                }
+                            },
                             expandedActionTurnId = expandedActionTurnId,
                             expandedActionSource = expandedActionSource,
                             activeThinkingKey = activeThinkingKey,
@@ -274,6 +327,12 @@ internal fun HomePageContentBody(
                     )
                 }
             }
+        }
+
+        Row(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = liquidScreenTopPadding(4.dp))) {
+            TextButton(onClick = onOpenProject) { Text(stringResource(R.string.project_home_project)) }
+            TextButton(onClick = {}, enabled = false) { Text(stringResource(R.string.project_home_chat)) }
+            TextButton(onClick = onOpenRuns) { Text(stringResource(R.string.project_runs)) }
         }
 
         if (pendingImages.isNotEmpty() || pendingFiles.isNotEmpty()) {
@@ -311,6 +370,10 @@ internal fun HomePageContentBody(
                 taskOptionsActive = uiState.turnOptions.workflowEnabled || uiState.turnOptions.reasoningGuideEnabled ||
                     uiState.turnOptions.reasoningEffort != null,
                 onTaskOptionsClick = { openPanel(ComposerPanel.TaskOptions) },
+                sendAvailable = !uiState.isLoadingConversation,
+                reasoningEffortLabel = homeReasoningEffortLabel(uiState.turnOptions.reasoningEffort),
+                reasoningEffortShortLabel = uiState.turnOptions.reasoningEffort?.let { homeReasoningEffortLabel(it) },
+                onReasoningEffortClick = { openPanel(ComposerPanel.ReasoningEffort) },
                 backdrop = chatBackdrop,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -382,6 +445,17 @@ internal fun HomePageContentBody(
             },
             onFileClick = { filePicker.launch(arrayOf("*/*")) },
             onFolderClick = { folderPicker.launch(null) },
+            onVoiceClick = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                    .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                try {
+                    voiceTarget = uiState.currentConversationId to uiState.conversationVersion
+                    voicePicker.launch(intent)
+                } catch (_: ActivityNotFoundException) {
+                    voiceTarget = null
+                    Toast.makeText(context, R.string.ui_voice_unavailable, Toast.LENGTH_SHORT).show()
+                }
+            },
         )
         HomeWorkspaceSheet(
             visible = panel == ComposerPanel.Workspace,
@@ -419,7 +493,16 @@ internal fun HomePageContentBody(
             options = uiState.turnOptions,
             onToggleWorkflow = onToggleWorkflow,
             onToggleReasoningGuide = onToggleReasoningGuide,
-            onSelectReasoningEffort = onSelectReasoningEffort,
+            onOpenReasoningEffort = { panel = ComposerPanel.ReasoningEffort },
+        )
+        HomeReasoningEffortDialog(
+            visible = panel == ComposerPanel.ReasoningEffort,
+            effort = uiState.turnOptions.reasoningEffort,
+            onDismiss = { panel = null },
+            onSelect = {
+                panel = null
+                onSelectReasoningEffort(it)
+            },
         )
     }
 }

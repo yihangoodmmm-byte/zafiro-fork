@@ -13,6 +13,8 @@ import com.niki914.zafiro.service.requireService
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * 常驻通知生命周期与授权决议管理器。
@@ -26,36 +28,36 @@ object ResidentNotificationManager {
 
     private const val TAG = "niki914_zafiro_ResidentNotificationManager"
 
-    private var activeApprovalCont: CancellableContinuation<ApprovalDecision>? = null
-    var activeApprovalRequest: ApprovalRequest? = null
-        private set
+    private data class Pending(
+        val token: String,
+        val request: ApprovalRequest,
+        val continuation: CancellableContinuation<ApprovalDecision>,
+    )
 
+    private val pending = AtomicReference<Pending?>(null)
+    val activeApprovalRequest: ApprovalRequest? get() = pending.get()?.request
     private var approverRegistered = false
 
     internal val residentApprover = object : Approver {
-        override suspend fun decide(request: ApprovalRequest): ApprovalDecision {
-            return suspendCancellableCoroutine { cont ->
-                activeApprovalCont = cont
-                activeApprovalRequest = request
-                AgentRuntimeService.notifyUpdate()
-                cont.invokeOnCancellation {
-                    if (activeApprovalCont === cont) {
-                        activeApprovalCont = null
-                    }
-                    if (activeApprovalRequest == request) {
-                        activeApprovalRequest = null
-                    }
-                    AgentRuntimeService.notifyUpdate()
-                }
+        override suspend fun decide(request: ApprovalRequest): ApprovalDecision = suspendCancellableCoroutine { cont ->
+            val entry = Pending(UUID.randomUUID().toString(), request, cont)
+            if (!pending.compareAndSet(null, entry)) {
+                cont.resume(ApprovalDecision.Abstain)
+                return@suspendCancellableCoroutine
             }
+            cont.invokeOnCancellation {
+                if (pending.compareAndSet(entry, null)) AgentRuntimeService.notifyUpdate()
+            }
+            AgentRuntimeService.notifyUpdate()
         }
     }
 
-    fun resolveApproval(decision: ApprovalDecision) {
-        val cont = activeApprovalCont
-        activeApprovalCont = null
-        activeApprovalRequest = null
-        cont?.resume(decision)
+    internal fun tokenFor(request: ApprovalRequest): String? = pending.get()?.takeIf { it.request === request }?.token
+
+    fun resolveApproval(decision: ApprovalDecision, token: String? = null) {
+        val entry = pending.get()?.takeIf { it.token == token } ?: return
+        if (!pending.compareAndSet(entry, null)) return
+        entry.continuation.resume(decision)
         AgentRuntimeService.notifyUpdate()
     }
 
@@ -84,10 +86,7 @@ object ResidentNotificationManager {
             agentControl?.removeApprover(residentApprover)
             approverRegistered = false
         }
-        val cont = activeApprovalCont
-        activeApprovalCont = null
-        activeApprovalRequest = null
-        cont?.cancel()
+        pending.getAndSet(null)?.continuation?.cancel()
 
         val intent = Intent(context, AgentRuntimeService::class.java).apply {
             action = AgentRuntimeService.ACTION_STOP_RESIDENT
@@ -105,8 +104,6 @@ object ResidentNotificationManager {
             agentControl?.removeApprover(residentApprover)
             approverRegistered = false
         }
-        activeApprovalCont?.cancel()
-        activeApprovalCont = null
-        activeApprovalRequest = null
+        pending.getAndSet(null)?.continuation?.cancel()
     }
 }

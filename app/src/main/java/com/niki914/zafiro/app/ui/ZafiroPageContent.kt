@@ -14,6 +14,14 @@ import com.niki914.zafiro.app.ui.nav.DonePage
 import com.niki914.zafiro.app.ui.nav.ExecutionRuleDetailPage
 import com.niki914.zafiro.app.ui.nav.HomePage
 import com.niki914.zafiro.app.ui.nav.BrowserWorkbenchPage
+import com.niki914.zafiro.app.ui.nav.ProjectWorkbenchPage
+import com.niki914.zafiro.app.ui.nav.ProjectRunsPage
+import com.niki914.zafiro.app.workbench.ProjectWorkbenchModel
+import com.niki914.uikit.infra.nav.pageViewModel
+import com.niki914.zafiro.app.workbench.ProjectWorkbenchContent
+import com.niki914.uikit.infra.nav.parentPageViewModel
+import com.niki914.zafiro.app.ui.model.home.HomeChatViewModel
+import com.niki914.zafiro.app.ui.model.home.HomeChatIntent
 import com.niki914.zafiro.app.ui.content.BrowserWorkbenchContent
 import com.niki914.zafiro.app.ui.nav.MarkdownScalePage
 import com.niki914.zafiro.app.ui.nav.McpServerDetailPage
@@ -73,6 +81,23 @@ fun ZafiroPageContent(
 ) {
     when (val page = entry.page) {
         BrowserWorkbenchPage -> BrowserWorkbenchContent()
+        ProjectWorkbenchPage, ProjectRunsPage -> {
+            val chat = parentPageViewModel<HomeChatViewModel> { it == HomePage }
+            val bindChat: ((String) -> Unit)? = if (chat == null) null else { path ->
+                chat.sendIntent(HomeChatIntent.WorkspaceSelected(path))
+                onPop()
+            }
+            val addReference: ((String) -> Unit)? = if (chat == null) null else { reference ->
+                chat.sendIntent(HomeChatIntent.AppendProjectReference(reference))
+                onPop()
+            }
+            val workbench = parentPageViewModel<ProjectWorkbenchModel> { it == HomePage }
+                ?: pageViewModel<ProjectWorkbenchModel>()
+            ProjectWorkbenchContent(
+                onOpenBrowser = { onPush(BrowserWorkbenchPage) }, onBindChat = bindChat, onAddReference = addReference,
+                openRuns = page == ProjectRunsPage, viewModel = workbench,
+            )
+        }
 
         StartupPage -> StartupPageRoute(
             startupAssistantUi = startupAssistantUi,

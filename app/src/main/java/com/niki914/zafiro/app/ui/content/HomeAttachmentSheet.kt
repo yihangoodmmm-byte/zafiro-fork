@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -20,12 +21,18 @@ internal fun HomeAttachmentSheet(
     onCameraClick: () -> Unit,
     onFileClick: () -> Unit,
     onFolderClick: () -> Unit,
+    onVoiceClick: () -> Unit,
 ) {
     OptionSheet(
         visible = visible,
         onDismissRequest = onDismissRequest,
         title = stringResource(R.string.ui_home_attach_sheet_title),
     ) { dismissThen ->
+        OptionRow(
+            title = stringResource(R.string.ui_voice_input),
+            leadingContent = { Icon(Icons.Default.Mic, contentDescription = null) },
+            onClick = { dismissThen(onVoiceClick) },
+        )
         OptionRow(
             title = stringResource(R.string.ui_home_attach_photos),
             leadingContent = { Icon(Icons.Default.Image, contentDescription = null) },

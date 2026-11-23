@@ -27,6 +27,7 @@ import com.niki914.zafiro.chat.agentic.accessibility.AccessibilityController.ens
 import com.niki914.zafiro.chat.agentic.accessibility.AccessibilityController.ensureService
 import com.niki914.zafiro.chat.agentic.accessibility.AccessibilityController.nodeCache
 import com.niki914.zafiro.chat.agentic.accessibility.AccessibilityController.refreshNodeCache
+import com.niki914.zafiro.chat.agentic.ScreenOperationCoordinator
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.zafiro.chat.agentic.buildin.ScreenOperationError
 import com.niki914.zafiro.chat.agentic.shell.TerminalCommandOutcome
@@ -150,6 +151,51 @@ object AccessibilityController {
         val errorCode: String? = null,
     ) {
         val success: Boolean get() = exitCode == 0
+    }
+
+    data class InspectionNode(val depth: Int, val className: String, val clickable: Boolean, val editable: Boolean, val bounds: String)
+    data class WindowInspection(val nodes: List<InspectionNode>, val limited: Boolean)
+
+    /** Read-only inspection leaves the agent's node references and pointer untouched. */
+    @Suppress("DEPRECATION")
+    fun inspectConnectedWindow(): WindowInspection? {
+        val root = serviceInstance?.windowRoot ?: return null
+        val nodes = mutableListOf<InspectionNode>()
+        var limited = false
+        fun visit(node: AccessibilityNodeInfo, depth: Int) {
+            try {
+                val bounds = AndroidRect().also { node.getBoundsInScreen(it) }
+                nodes += InspectionNode(depth, node.className?.toString().orEmpty().take(120),
+                    node.isClickable, node.isEditable, bounds.toShortString())
+                for (index in 0 until node.childCount) {
+                    if (depth == 16 || nodes.size == 160 || index == 160) {
+                        limited = true
+                        break
+                    }
+                    node.getChild(index)?.let { visit(it, depth + 1) }
+                }
+            } finally {
+                node.recycle()
+            }
+        }
+        visit(root, 0)
+        return WindowInspection(nodes.toList(), limited)
+    }
+
+    enum class ManualNavigation { Back, Home, Recents }
+
+    fun navigateManually(action: ManualNavigation): Boolean = ScreenOperationCoordinator.tryManualAction {
+        val service = serviceInstance as? AccessibilityService ?: return@tryManualAction false
+        val accepted = service.performGlobalAction(when (action) {
+            ManualNavigation.Back -> GLOBAL_ACTION_BACK
+            ManualNavigation.Home -> GLOBAL_ACTION_HOME
+            ManualNavigation.Recents -> GLOBAL_ACTION_RECENTS
+        })
+        if (accepted) {
+            currentVersion = nextVersion()
+            nodeCache.clear()
+        }
+        accepted
     }
 
     fun setService(service: IAccessibility) {

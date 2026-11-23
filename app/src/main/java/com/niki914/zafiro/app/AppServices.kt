@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ComponentName
 import com.niki914.xsettings.XSettings
 import com.niki914.zafiro.app.browser.AndroidBrowserService
+import com.niki914.zafiro.chat.agentic.WorkspaceTurnReviews
 import com.niki914.zafiro.platform.browser.BrowserService
 import com.niki914.zafiro.api.AgentControl
 import com.niki914.zafiro.api.AgentManager
@@ -42,6 +43,7 @@ import com.niki914.zafiro.service.installService
 object AppServices {
 
     fun install(application: Application) {
+        WorkspaceTurnReviews.configureStorage(application.noBackupFilesDir)
         // 会话持久化端口：Room 在 app 侧，实现侧经它读写会话记录
         installService<ConversationStore_Tmp>(RoomConversationStore_Tmp())
         val agentManager = AgentManagerImpl()

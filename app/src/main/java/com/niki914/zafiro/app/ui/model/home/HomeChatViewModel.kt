@@ -126,6 +126,10 @@ class HomeChatViewModel internal constructor(
     override suspend fun handleIntent(intent: HomeChatIntent) {
         when (intent) {
             is HomeChatIntent.InputChanged -> onInputChanged(intent.value)
+            is HomeChatIntent.AppendProjectReference -> {
+                val draft = currentState.input
+                onInputChanged(draft + (if (draft.isBlank() || draft.endsWith("\n")) "" else "\n") + intent.value)
+            }
             HomeChatIntent.Send -> sendCurrentInput()
             HomeChatIntent.Warmup -> agent.warmup()
             is HomeChatIntent.ImageAttached -> attachImage(intent.uri)
@@ -597,6 +601,7 @@ class HomeChatViewModel internal constructor(
     }
 
     private suspend fun sendCurrentInput() {
+        if (currentState.isLoadingConversation || currentState.isGenerating || agent.status.value.isRunning) return
         val trimmedInput = currentState.input.trim()
         val hasAttachments =
             currentState.pendingImages.isNotEmpty() || currentState.pendingFiles.isNotEmpty()

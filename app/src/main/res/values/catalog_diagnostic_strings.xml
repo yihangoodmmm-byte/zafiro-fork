@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="catalog_diagnostic_title">模型目录诊断</string>
+    <string name="catalog_diagnostic_ok">目录请求成功；不代表模型推理可用。</string>
+    <string name="catalog_diagnostic_pending">正在检查模型目录</string>
+    <string name="catalog_diagnostic_auth">服务拒绝授权，请检查 API 密钥和访问权限。</string>
+    <string name="catalog_diagnostic_unavailable">服务未提供此模型目录接口。</string>
+    <string name="catalog_diagnostic_rate">请求过于频繁，请稍后再试。</string>
+    <string name="catalog_diagnostic_server">模型服务暂时出错。</string>
+    <string name="catalog_diagnostic_tls">无法建立安全连接。</string>
+    <string name="catalog_diagnostic_timeout">模型目录请求超时。</string>
+    <string name="catalog_diagnostic_dns">无法解析服务地址。</string>
+    <string name="catalog_diagnostic_failed">无法读取模型目录。</string>
+</resources>

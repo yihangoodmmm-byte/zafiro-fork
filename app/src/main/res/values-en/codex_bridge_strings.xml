@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="codex_title">Desktop Codex</string>
+    <string name="codex_endpoint">Bridge URL (HTTPS)</string>
+    <string name="codex_token">Bridge token</string>
+    <string name="codex_cwd">Desktop project path</string>
+    <string name="codex_prompt">Task prompt</string>
+    <string name="codex_health">Check connection</string>
+    <string name="codex_wait">Waiting for desktop response</string>
+    <string name="codex_http">Bridge request failed: HTTP %1$d</string>
+    <string name="codex_ok">Bridge request succeeded</string>
+    <string name="codex_failed">No successful response. Check the desktop before retrying.</string>
+    <string name="codex_confirm_run">Send the task and project path to this desktop bridge?</string>
+    <string name="codex_confirm_stop">Ask the desktop bridge to stop its current task?</string>
+</resources>

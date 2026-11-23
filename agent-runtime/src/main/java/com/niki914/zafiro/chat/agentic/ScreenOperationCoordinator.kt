@@ -7,6 +7,11 @@ import kotlinx.coroutines.sync.Mutex
 internal object ScreenOperationCoordinator {
     private val operation = Mutex()
 
+    fun tryManualAction(block: () -> Boolean): Boolean {
+        if (!operation.tryLock()) return false
+        try { return block() } finally { operation.unlock() }
+    }
+
     suspend fun execute(block: suspend () -> TextToolResult): TextToolResult {
         if (!operation.tryLock()) return TextToolResult.failure(
             "SCREEN_BUSY", "Another screen observation or action is in progress. Wait and take a fresh observation before acting.",

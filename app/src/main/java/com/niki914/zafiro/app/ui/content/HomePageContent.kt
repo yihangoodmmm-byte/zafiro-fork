@@ -68,6 +68,8 @@ fun HomePageContent(
     onActiveConversationChanged: (String?) -> Unit,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenProject: () -> Unit = {},
+    onOpenRuns: () -> Unit = {},
 ) {
     val viewModel = pageViewModel<HomeChatViewModel>()
     val latestViewModel by rememberUpdatedState(viewModel)
@@ -325,7 +327,10 @@ fun HomePageContent(
 
     HomePageContentBody(
         uiState = uiState,
+        isCurrentPage = isCurrentPage,
         actionsDisplay = actionsDisplay,
+        onOpenProject = onOpenProject,
+        onOpenRuns = onOpenRuns,
         listState = listState,
         overscrollController = overscrollController,
         composerBottomPadding = composerBottomPadding,

@@ -1,0 +1,345 @@
+package com.niki914.zafiro.app.workbench
+
+import android.app.Application
+import androidx.lifecycle.viewModelScope
+import com.niki914.uikit.base.ComposeMVIViewModel
+import com.niki914.zafiro.business.files.FileAttachResult
+import com.niki914.zafiro.business.files.FilesService
+import com.niki914.zafiro.service.requireService
+import com.niki914.zafiro.chat.agentic.AgentTenantContext
+import com.niki914.zafiro.chat.agentic.WorkspaceTurnReviews
+import com.niki914.zafiro.chat.agentic.shell.TerminalSessionPool
+import com.niki914.zafiro.chat.agentic.shell.TerminalOpenOutcome
+import com.niki914.zafiro.chat.agentic.shell.TerminalInteractiveReadOutcome
+import com.niki914.zafiro.chat.agentic.shell.TerminalInteractiveWriteOutcome
+import java.util.UUID
+import kotlinx.coroutines.delay
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+internal data class ProjectWorkbenchState(
+    val input: String = "",
+    val project: String? = null,
+    val directory: String = "",
+    val entries: List<ProjectEntry> = emptyList(),
+    val document: ProjectDocument? = null,
+    val draft: String = "",
+    val jumpToLine: Int = 1,
+    val documentOpenId: Long = 0,
+    val query: String = "",
+    val search: ProjectSearch? = null,
+    val searching: Boolean = false,
+    val gitVisible: Boolean = false,
+    val runsVisible: Boolean = false,
+    val terminalVisible: Boolean = false,
+    val terminalRunning: Boolean = false,
+    val terminalReady: Boolean = false,
+    val terminalHistory: List<String> = emptyList(),
+    val terminalHistoryOffset: Int = 0,
+    val terminalPendingInput: String = "",
+    val terminalFailed: Boolean = false,
+    val terminalOutput: String = "",
+    val terminalInput: String = "",
+    val command: String = "",
+    val runs: List<ProjectRun> = emptyList(),
+    val gitStatus: ProjectGitStatus? = null,
+    val gitDiff: ProjectDiff? = null,
+    val problem: ProjectFileProblem? = null,
+    val restoredFile: String? = null,
+) {
+    val dirty get() = document?.text?.let { it != draft } == true
+}
+
+internal sealed interface ProjectIntent {
+    data class Input(val text: String) : ProjectIntent
+    data class Query(val text: String) : ProjectIntent
+    data class Draft(val documentOpenId: Long, val text: String) : ProjectIntent
+    data class OpenProject(val path: String, val app: Application) : ProjectIntent
+    data class Restore(val app: Application) : ProjectIntent
+    data class Directory(val path: String) : ProjectIntent
+    data class OpenFile(val path: String, val line: Int = 1, val fromLog: Boolean = false) : ProjectIntent
+    data class CreateEntry(val name: String, val folder: Boolean) : ProjectIntent
+    data class Save(val documentOpenId: Long) : ProjectIntent
+    data object CancelEdit : ProjectIntent
+    data object Search : ProjectIntent
+    data class GitDiff(val change: ProjectGitChange) : ProjectIntent
+    data class SetStaged(val change: ProjectGitChange, val staged: Boolean) : ProjectIntent
+    data class Commit(val message: String) : ProjectIntent
+    data class Command(val text: String) : ProjectIntent
+    data class Run(val command: String) : ProjectIntent
+    data object Stop : ProjectIntent
+    data object ShowRuns : ProjectIntent
+    data object ShowTerminal : ProjectIntent
+    data object StartTerminal : ProjectIntent
+    data object StopTerminal : ProjectIntent
+    data object SendTerminal : ProjectIntent
+    data class TerminalHistory(val older: Boolean) : ProjectIntent
+    data class TerminalInput(val text: String) : ProjectIntent
+    data object ShowGit : ProjectIntent
+    data object ShowFiles : ProjectIntent
+    data class RestoreReview(val reviewId: String, val path: String) : ProjectIntent
+}
+
+internal class ProjectWorkbenchModel : ComposeMVIViewModel<ProjectIntent, ProjectWorkbenchState, Nothing>() {
+    private var files: ProjectFiles? = null
+    private var searchJob: Job? = null
+    private var runJob: Job? = null
+    private var terminalJob: Job? = null
+    private var terminalHandle: String? = null
+    private val terminalOwner = AgentTenantContext("workbench-terminal-" + UUID.randomUUID())
+    private var runSequence = 0L
+    private var history: ProjectRunHistory? = null
+    override fun initUiState() = ProjectWorkbenchState()
+
+    override suspend fun handleIntent(intent: ProjectIntent) {
+        when (intent) {
+            is ProjectIntent.Input -> updateState { copy(input = intent.text) }
+            is ProjectIntent.Query -> {
+                if (intent.text != currentState.query) {
+                    searchJob?.cancel()
+                    updateState { copy(query = intent.text, search = null, searching = false) }
+                }
+            }
+            is ProjectIntent.Draft -> updateState {
+                if (document != null && documentOpenId == intent.documentOpenId) copy(draft = intent.text) else this
+            }
+            is ProjectIntent.OpenProject -> {
+                if (currentState.dirty) return
+                when (val result = requireService<FilesService>().bindWorkspace(intent.path)) {
+                    is FileAttachResult.Ok -> openProject(intent.app, result.file.path)
+                    FileAttachResult.Unresolvable -> updateState { copy(problem = ProjectFileProblem.InvalidDirectory) }
+                    else -> updateState { copy(problem = ProjectFileProblem.Inaccessible) }
+                }
+            }
+            is ProjectIntent.Restore -> if (files == null) {
+                intent.app.getSharedPreferences("project_workbench", 0).getString("path", null)?.let {
+                    updateState { copy(input = it) }
+                    openProject(intent.app, it)
+                }
+            }
+            is ProjectIntent.Directory -> {
+                val project = files ?: return
+                val entries = withContext(Dispatchers.IO) { project.list(intent.path) }
+                updateState { copy(directory = intent.path, entries = entries, problem = null) }
+            }
+            is ProjectIntent.OpenFile -> {
+                if (currentState.dirty) return
+                val project = files ?: return
+                val doc = withContext(Dispatchers.IO) {
+                    if (intent.fromLog) project.readDiagnostic(intent.path) else project.read(intent.path)
+                }
+                updateState { copy(document = doc, draft = doc.text, jumpToLine = intent.line,
+                    documentOpenId = documentOpenId + 1, runsVisible = false, problem = null) }
+            }
+            is ProjectIntent.CreateEntry -> {
+                if (currentState.dirty) return
+                val project = files ?: return
+                val directory = currentState.directory
+                val (entries, doc) = withContext(Dispatchers.IO) {
+                    val path = project.createEntry(directory, intent.name.trim(), intent.folder)
+                    project.list(directory) to if (intent.folder) null else project.read(path)
+                }
+                searchJob?.cancel()
+                updateState { copy(entries = entries, document = doc, draft = doc?.text.orEmpty(),
+                    jumpToLine = 1, documentOpenId = documentOpenId + 1, search = null, searching = false, problem = null) }
+            }
+            is ProjectIntent.Save -> {
+                if (currentState.documentOpenId != intent.documentOpenId) return
+                val project = files ?: return
+                val doc = currentState.document ?: return
+                val draft = currentState.draft
+                val saved = withContext(Dispatchers.IO) { project.save(doc, draft) }
+                updateState { copy(document = saved, draft = saved.text, problem = null) }
+            }
+            ProjectIntent.CancelEdit -> updateState { copy(document = null, draft = "", problem = null) }
+            is ProjectIntent.SetStaged -> {
+                val project = files ?: return
+                val status = withContext(Dispatchers.IO) {
+                    ProjectGit(project.root).run {
+                        if (intent.staged) stage(intent.change) else unstage(intent.change)
+                        status()
+                    }
+                }
+                updateState { copy(gitStatus = status, gitDiff = null, problem = null) }
+            }
+            is ProjectIntent.Commit -> {
+                val project = files ?: return
+                val status = withContext(Dispatchers.IO) {
+                    ProjectGit(project.root).run { commit(intent.message); status() }
+                }
+                updateState { copy(gitStatus = status, gitDiff = null, problem = null) }
+            }
+            is ProjectIntent.Command -> updateState { copy(command = intent.text) }
+            is ProjectIntent.Run -> startRun(intent.command)
+            ProjectIntent.Stop -> runJob?.cancel()
+            ProjectIntent.ShowRuns -> updateState { copy(runsVisible = true, gitVisible = false, terminalVisible = false) }
+            ProjectIntent.ShowTerminal -> updateState { copy(terminalVisible = true, runsVisible = false, gitVisible = false) }
+            ProjectIntent.StartTerminal -> startTerminal()
+            ProjectIntent.StopTerminal -> terminalJob?.cancel()
+            is ProjectIntent.TerminalInput -> updateState { copy(terminalInput = intent.text.take(8192)) }
+            ProjectIntent.SendTerminal -> sendTerminal()
+            is ProjectIntent.TerminalHistory -> moveTerminalHistory(intent.older)
+            ProjectIntent.ShowGit -> {
+                val project = files ?: return
+                val status = withContext(Dispatchers.IO) { ProjectGit(project.root).status() }
+                updateState { copy(gitVisible = true, runsVisible = false, terminalVisible = false, gitStatus = status, gitDiff = null, problem = null) }
+            }
+            ProjectIntent.ShowFiles -> updateState { copy(gitVisible = false, runsVisible = false, terminalVisible = false, gitDiff = null, problem = null) }
+            is ProjectIntent.GitDiff -> {
+                val project = files ?: return
+                val diff = withContext(Dispatchers.IO) { ProjectGit(project.root).diff(intent.change) }
+                updateState { copy(gitDiff = diff, problem = null) }
+            }
+            is ProjectIntent.RestoreReview -> restoreReview(intent)
+            ProjectIntent.Search -> {
+                val project = files ?: return
+                val query = currentState.query.trim()
+                searchJob?.cancel()
+                updateState { copy(searching = query.isNotEmpty(), search = null, problem = null) }
+                if (query.isNotEmpty()) searchJob = viewModelScope.launch {
+                    try {
+                        val result = withContext(Dispatchers.IO) {
+                            project.search(query) { coroutineContext.ensureActive() }
+                        }
+                        updateState { copy(search = result, searching = false) }
+                    } catch (error: IOException) {
+                        onError(error)
+                        updateState { copy(searching = false) }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun restoreReview(intent: ProjectIntent.RestoreReview) {
+        val project = files ?: return
+        updateState { copy(restoredFile = null, problem = null) }
+        val workspace = project.root.path
+        if (currentState.dirty || currentState.terminalRunning ||
+            currentState.runs.any { it.status == ProjectRunStatus.Running } || WorkspaceTurnReviews.hasActiveCapture(workspace)) {
+            throw ProjectFileException(ProjectFileProblem.RestoreBusy)
+        }
+        val change = WorkspaceTurnReviews.reviews.value.firstOrNull { it.id == intent.reviewId && it.workspace == workspace }
+            ?.changes?.firstOrNull { it.path == intent.path } ?: throw ProjectFileException(ProjectFileProblem.Changed)
+        withContext(Dispatchers.IO) { project.restore(change.path, change.before, change.after) }
+        updateState {
+            if (document?.relativePath == change.path) copy(document = null, draft = "", restoredFile = change.path)
+            else copy(restoredFile = change.path)
+        }
+        val directory = currentState.directory
+        val refreshed = withContext(Dispatchers.IO) { project.list(directory) }
+        searchJob?.cancel()
+        updateState { copy(entries = refreshed, gitStatus = null, gitDiff = null, search = null, searching = false) }
+    }
+
+    private fun startTerminal() {
+        val path = currentState.project ?: return
+        if (currentState.terminalRunning) return
+        updateState { copy(terminalRunning = true, terminalFailed = false, terminalOutput = "") }
+        terminalJob = viewModelScope.launch(terminalOwner, start = CoroutineStart.UNDISPATCHED) {
+            try {
+                val opened = TerminalSessionPool.open(identity = "user", cwd = path, collectOutput = true)
+                if (opened !is TerminalOpenOutcome.Success) {
+                    updateState { copy(terminalFailed = true) }
+                    return@launch
+                }
+                terminalHandle = opened.session
+                updateState { copy(terminalReady = true) }
+                do {
+                    val result = TerminalSessionPool.readInteractive(opened.session, maxBytes = 24_000)
+                    if (result !is TerminalInteractiveReadOutcome.Success) break
+                    if (result.text.isNotEmpty()) updateState { copy(terminalOutput = (terminalOutput + result.text).takeLast(24_000)) }
+                    if (!TerminalSessionPool.isSessionAlive(opened.session)) break
+                    delay(150)
+                } while (true)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                updateState { copy(terminalFailed = true) }
+            } finally {
+                val handle = terminalHandle
+                terminalHandle = null
+                updateState { copy(terminalReady = false) }
+                if (handle != null) withContext(NonCancellable) { TerminalSessionPool.close(handle) }
+                updateState { copy(terminalRunning = false) }
+            }
+        }
+    }
+
+    private fun moveTerminalHistory(older: Boolean) = updateState {
+        val offset = (terminalHistoryOffset + if (older) 1 else -1).coerceIn(0, terminalHistory.size)
+        val pending = if (terminalHistoryOffset == 0) terminalInput else terminalPendingInput
+        copy(terminalHistoryOffset = offset, terminalPendingInput = pending,
+            terminalInput = if (offset == 0) pending else terminalHistory[offset - 1])
+    }
+
+    private suspend fun sendTerminal() {
+        val handle = terminalHandle ?: return
+        val text = currentState.terminalInput
+        val result = withContext(terminalOwner) { TerminalSessionPool.writeInteractive(handle, text + "\n") }
+        if (result is TerminalInteractiveWriteOutcome.Accepted) updateState {
+            val history = if (text.isBlank() || text == terminalHistory.firstOrNull()) terminalHistory
+                else (listOf(text) + terminalHistory).take(50)
+            copy(terminalInput = "", terminalPendingInput = "", terminalHistoryOffset = 0, terminalHistory = history, terminalFailed = false)
+        }
+        else updateState { copy(terminalFailed = true) }
+    }
+
+    private fun startRun(command: String) {
+        val directory = currentState.project ?: return
+        if (runJob?.isActive == true || currentState.runs.any { it.status == ProjectRunStatus.Running } || command.isBlank()) return
+        val storage = history ?: return
+        val run = ProjectRun(++runSequence, command)
+        val started = (listOf(run) + currentState.runs).take(ProjectRunHistory.LIMIT)
+        updateState { copy(runs = started) }
+        runJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            val result = try {
+                recordRuns(storage, directory, started)
+                ProjectRuns.execute(directory, run)
+            } catch (_: CancellationException) {
+                run.copy(status = ProjectRunStatus.Stopped)
+            } catch (_: Exception) {
+                run.copy(status = ProjectRunStatus.Failed)
+            }
+            val completed = started.map { if (it.id == run.id) result else it }
+            withContext(NonCancellable) { recordRuns(storage, directory, completed) }
+            updateState { copy(runs = completed) }
+        }
+    }
+
+    private suspend fun recordRuns(storage: ProjectRunHistory, directory: String, runs: List<ProjectRun>) {
+        try {
+            withContext(Dispatchers.IO) { storage.save(directory, runs) }
+        } catch (_: IOException) {
+            updateState { copy(problem = ProjectFileProblem.RunHistory) }
+        }
+    }
+
+    private suspend fun openProject(app: Application, path: String) {
+        if (currentState.dirty || currentState.terminalRunning || currentState.runs.any { it.status == ProjectRunStatus.Running }) return
+        val storage = ProjectRunHistory(app)
+        val (opened, entries, runs) = withContext(Dispatchers.IO) {
+            val project = ProjectFiles.open(path)
+            Triple(project, project.list(""), storage.load(project.root.path))
+        }
+        history = storage
+        runSequence = runs.maxOfOrNull { it.id } ?: 0L
+        searchJob?.cancel()
+        files = opened
+        val canonical = opened.root.path
+        app.getSharedPreferences("project_workbench", 0).edit().putString("path", canonical).apply()
+        updateState { ProjectWorkbenchState(input = canonical, project = canonical, entries = entries, runs = runs,
+            runsVisible = runsVisible, documentOpenId = documentOpenId + 1) }
+    }
+
+    override fun onError(error: Throwable) {
+        updateState { copy(problem = (error as? ProjectFileException)?.problem ?: ProjectFileProblem.Inaccessible) }
+    }
+}

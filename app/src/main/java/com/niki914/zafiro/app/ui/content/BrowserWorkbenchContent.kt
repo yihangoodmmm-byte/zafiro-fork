@@ -37,6 +37,7 @@ import com.niki914.zafiro.app.R
 import com.niki914.zafiro.app.browser.AndroidBrowserService
 import com.niki914.zafiro.app.ui.model.BrowserWorkbenchIntent
 import com.niki914.zafiro.app.ui.model.BrowserWorkbenchViewModel
+import com.niki914.zafiro.platform.browser.BrowserCommand
 import com.niki914.zafiro.platform.browser.BrowserService
 import com.niki914.zafiro.service.requireService
 
@@ -97,7 +98,21 @@ fun BrowserWorkbenchContent(viewModel: BrowserWorkbenchViewModel = pageViewModel
         } else {
             Text(selected.url, style = MaterialTheme.typography.bodySmall, maxLines = 2)
             selected.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Row {
+            val canNavigate = selected.humanControl && !selected.loading && selected.error?.startsWith("renderer:") != true
+            Row(Modifier.horizontalScroll(rememberScrollState())) {
+                listOf(
+                    Triple(BrowserCommand.BACK, R.string.browser_back, selected.canGoBack),
+                    Triple(BrowserCommand.FORWARD, R.string.browser_forward, selected.canGoForward),
+                    Triple(BrowserCommand.RELOAD, R.string.browser_reload, true),
+                    Triple(BrowserCommand.NAVIGATE, R.string.browser_go, state.address.isNotBlank()),
+                ).forEach { (command, label, available) ->
+                    TextButton(
+                        onClick = { viewModel.sendIntent(BrowserWorkbenchIntent.Navigate(command)) },
+                        enabled = canNavigate && available,
+                    ) { Text(stringResource(label)) }
+                }
+            }
+            Row(Modifier.horizontalScroll(rememberScrollState())) {
                 TextButton(onClick = { viewModel.sendIntent(BrowserWorkbenchIntent.ToggleControl) }) {
                     Text(stringResource(if (selected.humanControl) R.string.browser_release_control else R.string.browser_take_control))
                 }

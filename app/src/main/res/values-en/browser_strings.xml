@@ -9,4 +9,8 @@
     <string name="browser_release_control">Release control</string>
     <string name="browser_close">Close tab</string>
     <string name="browser_isolation_notice">Tabs are isolated per agent. Viewing a tab does not change the execution target. Take control to interact manually.</string>
+    <string name="browser_back">Back</string>
+    <string name="browser_forward">Forward</string>
+    <string name="browser_reload">Reload</string>
+    <string name="browser_go">Go</string>
 </resources>

@@ -15,6 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.niki914.zafiro.app.R
 import androidx.compose.ui.unit.sp
 import com.niki914.zafiro.app.ui.model.home.ActionSource
 
@@ -35,6 +39,8 @@ fun TurnActionRow(
     onReGenerate: () -> Unit,
     onFork: () -> Unit,
     onRewind: () -> Unit = {},
+    onReadAloud: (() -> Unit)? = null,
+    isReadingAloud: Boolean = false,
     branchIndex: Int = 1,
     branchCount: Int = 1,
     onSwitchBranch: (Int) -> Unit = {},
@@ -56,6 +62,15 @@ fun TurnActionRow(
                 onClick = onCopy,
             )
             if (isAgent) {
+                if (onReadAloud != null) {
+                    ActionButton(
+                        icon = if (isReadingAloud) Icons.Default.Stop else Icons.Default.VolumeUp,
+                        contentDescription = stringResource(
+                            if (isReadingAloud) R.string.ui_voice_read_stop else R.string.ui_voice_read,
+                        ),
+                        onClick = onReadAloud,
+                    )
+                }
                 ActionButton(
                     icon = Icons.Default.Refresh,
                     contentDescription = "Regenerate Icon",

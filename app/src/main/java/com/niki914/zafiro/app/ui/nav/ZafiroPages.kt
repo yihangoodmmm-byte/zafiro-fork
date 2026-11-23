@@ -143,6 +143,20 @@ data object HomePage : ZafiroPage {
     )
 }
 
+data object ProjectWorkbenchPage : ZafiroPage {
+    override val routeKey = "project-workbench"
+    override val titleSpec: PageTitleSpec = ResTitle(R.string.project_title)
+    override val leftAction = TopBarActionSpec(icon = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+    override val rightAction: TopBarActionSpec? = null
+}
+
+data object ProjectRunsPage : ZafiroPage {
+    override val routeKey = "project-runs"
+    override val titleSpec: PageTitleSpec = ResTitle(R.string.project_runs)
+    override val leftAction = TopBarActionSpec(icon = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+    override val rightAction: TopBarActionSpec? = null
+}
+
 data object BrowserWorkbenchPage : ZafiroPage {
     override val routeKey = "browser-workbench"
     override val titleSpec: PageTitleSpec = ResTitle(R.string.browser_title)

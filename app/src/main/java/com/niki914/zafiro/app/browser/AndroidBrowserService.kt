@@ -89,7 +89,18 @@ class AndroidBrowserService(context: Context) : BrowserService {
         }
     }
 
-    private suspend fun executeLocked(owner: String, request: BrowserRequest): BrowserReply {
+    internal suspend fun navigateManually(request: BrowserRequest): BrowserReply = withContext(Dispatchers.Main.immediate) {
+        val tab = records[request.tabId] ?: return@withContext failure("TAB_NOT_FOUND", "Tab is no longer open.")
+        if (request.command !in setOf(BrowserCommand.NAVIGATE, BrowserCommand.BACK, BrowserCommand.FORWARD, BrowserCommand.RELOAD)) {
+            return@withContext failure("COMMAND_INVALID", "Not a manual navigation command.")
+        }
+        serialized(tab.owner) {
+            if (!tab.humanControl) failure("HUMAN_CONTROL_REQUIRED", "Take control before navigating.")
+            else executeLocked(tab.owner, request, manualNavigation = true)
+        }
+    }
+
+    private suspend fun executeLocked(owner: String, request: BrowserRequest, manualNavigation: Boolean = false): BrowserReply {
         if (request.command == BrowserCommand.LIST_TABS) return BrowserReply(true, tabs = records.values.filter { it.owner == owner }.map(::snapshot))
         if (request.command == BrowserCommand.OPEN) {
             val url = BrowserAddressPolicy.normalize(request.url) ?: return failure("URL_REJECTED", "Use a public HTTP(S) URL without credentials.")
@@ -114,7 +125,7 @@ class AndroidBrowserService(context: Context) : BrowserService {
             return BrowserReply(true, tab = snapshot(tab))
         }
         if (tab.error?.startsWith("renderer:") == true) return failure("RENDERER_GONE", "Close and reopen this tab.")
-        if (tab.humanControl && request.command !in setOf(BrowserCommand.SNAPSHOT, BrowserCommand.GET_TEXT, BrowserCommand.SCREENSHOT, BrowserCommand.WAIT)) {
+        if (tab.humanControl && !manualNavigation && request.command !in setOf(BrowserCommand.SNAPSHOT, BrowserCommand.GET_TEXT, BrowserCommand.SCREENSHOT, BrowserCommand.WAIT)) {
             return failure("HUMAN_CONTROL", "The user has manual control of this tab.")
         }
         when (request.command) {
@@ -241,7 +252,8 @@ class AndroidBrowserService(context: Context) : BrowserService {
                     if (request.isForMainFrame) { tab.error = error.description.toString(); tab.loading = false; publish() }
                 }
                 override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
-                    if (tab.url != url) { invalidate(tab); tab.url = url.orEmpty(); publish() }
+                    if (tab.url != url) { invalidate(tab); tab.url = url.orEmpty() }
+                    publish()
                 }
                 override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler, error: SslError?) {
                     handler.cancel(); tab.error = "TLS validation failed"; tab.loading = false; publish()
@@ -342,7 +354,14 @@ class AndroidBrowserService(context: Context) : BrowserService {
         publish()
     }
     private fun invalidate(tab: Tab) { tab.generation++; tab.observation = null }
-    private fun snapshot(tab: Tab) = BrowserTabState(tab.id, tab.owner, tab.title, tab.url, tab.generation, tab.loading, tab.humanControl, tab.viewport, tab.error)
+    private fun snapshot(tab: Tab): BrowserTabState {
+        val alive = tab.error?.startsWith("renderer:") != true
+        return BrowserTabState(
+            tab.id, tab.owner, tab.title, tab.url, tab.generation, tab.loading, tab.humanControl, tab.viewport, tab.error,
+            canGoBack = alive && tab.view.canGoBack(),
+            canGoForward = alive && tab.view.canGoForward(),
+        )
+    }
     private fun publish() { states.value = records.values.map(::snapshot) }
     private fun failure(code: String, message: String) = BrowserReply(false, code, message)
 }

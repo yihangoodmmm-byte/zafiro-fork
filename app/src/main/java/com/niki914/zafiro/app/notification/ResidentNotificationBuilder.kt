@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import com.niki914.zafiro.api.model.AgentState
@@ -31,6 +32,8 @@ object ResidentNotificationBuilder {
     const val ACTION_STOP = "com.niki914.zafiro.action.RESIDENT_STOP"
     const val ACTION_APPROVE = "com.niki914.zafiro.action.RESIDENT_APPROVE"
     const val ACTION_DECLINE = "com.niki914.zafiro.action.RESIDENT_DECLINE"
+
+    const val EXTRA_APPROVAL_TOKEN = "approval_token"
 
     private const val REQUEST_CODE_CONTENT = 101
     private const val REQUEST_CODE_STOP = 102
@@ -143,17 +146,25 @@ object ResidentNotificationBuilder {
         return PendingIntent.getService(context, REQUEST_CODE_STOP, intent, flags)
     }
 
-    fun createApproveIntent(context: Context): PendingIntent {
+    fun createApproveIntent(context: Context, token: String? = null): PendingIntent {
         val intent = Intent(context, AgentRuntimeService::class.java).apply {
             action = ACTION_APPROVE
+            if (token != null) {
+                data = Uri.Builder().scheme("zafiro-approval").authority(token).build()
+                putExtra(EXTRA_APPROVAL_TOKEN, token)
+            }
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getService(context, REQUEST_CODE_APPROVE, intent, flags)
     }
 
-    fun createDeclineIntent(context: Context): PendingIntent {
+    fun createDeclineIntent(context: Context, token: String? = null): PendingIntent {
         val intent = Intent(context, AgentRuntimeService::class.java).apply {
             action = ACTION_DECLINE
+            if (token != null) {
+                data = Uri.Builder().scheme("zafiro-approval").authority(token).build()
+                putExtra(EXTRA_APPROVAL_TOKEN, token)
+            }
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getService(context, REQUEST_CODE_DECLINE, intent, flags)
@@ -168,8 +179,10 @@ object ResidentNotificationBuilder {
         status: AgentState,
         contentIntent: PendingIntent? = createContentIntent(context),
         stopIntent: PendingIntent? = createStopIntent(context),
-        approveIntent: PendingIntent? = createApproveIntent(context),
-        declineIntent: PendingIntent? = createDeclineIntent(context),
+        approveIntent: PendingIntent? = (status as? AgentState.WaitingApproval)?.request
+            ?.let(ResidentNotificationManager::tokenFor)?.let { createApproveIntent(context, it) },
+        declineIntent: PendingIntent? = (status as? AgentState.WaitingApproval)?.request
+            ?.let(ResidentNotificationManager::tokenFor)?.let { createDeclineIntent(context, it) },
     ): Notification {
         return channelManager.buildNotification(AppNotificationChannel.Resident) {
             val icon = context.applicationInfo.icon.takeIf { it != 0 }

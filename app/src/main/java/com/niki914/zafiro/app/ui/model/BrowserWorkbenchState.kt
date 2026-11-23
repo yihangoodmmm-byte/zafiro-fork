@@ -1,6 +1,7 @@
 package com.niki914.zafiro.app.ui.model
 
 import androidx.lifecycle.viewModelScope
+import com.niki914.zafiro.app.browser.AndroidBrowserService
 import com.niki914.uikit.base.ComposeMVIViewModel
 import com.niki914.zafiro.platform.browser.BrowserCommand
 import com.niki914.zafiro.platform.browser.BrowserRequest
@@ -8,9 +9,6 @@ import com.niki914.zafiro.platform.browser.BrowserService
 import com.niki914.zafiro.platform.browser.BrowserTabState
 import com.niki914.zafiro.service.requireService
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 data class BrowserWorkbenchState(
     val tabs: List<BrowserTabState> = emptyList(),
@@ -22,32 +20,32 @@ sealed interface BrowserWorkbenchIntent {
     data class Select(val id: String) : BrowserWorkbenchIntent
     data class Address(val value: String) : BrowserWorkbenchIntent
     data object Open : BrowserWorkbenchIntent
+    data class Navigate(val command: BrowserCommand) : BrowserWorkbenchIntent
     data object Close : BrowserWorkbenchIntent
     data object ToggleControl : BrowserWorkbenchIntent
 }
 class BrowserWorkbenchViewModel : ComposeMVIViewModel<BrowserWorkbenchIntent, BrowserWorkbenchState, Nothing>() {
     private val browser = requireService<BrowserService>()
-    private companion object { val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate) }
     override fun initUiState() = BrowserWorkbenchState()
     init {
         viewModelScope.launch {
             browser.tabs.collect { tabs ->
                 updateState {
                     val selected = selectedId?.takeIf { id -> tabs.any { it.id == id } } ?: tabs.firstOrNull()?.id
-                    copy(tabs = tabs, selectedId = selected)
+                    val tab = tabs.firstOrNull { it.id == selected }
+                    val oldUrl = this.tabs.firstOrNull { it.id == selectedId }?.url
+                    val nextAddress = if (tab != null && (selected != selectedId || address == oldUrl)) tab.url else address
+                    copy(tabs = tabs, selectedId = selected, address = nextAddress)
                 }
             }
         }
     }
-    override fun onCleared() {
-        val service = browser
-        cleanupScope.launch { service.closeOwner("manual-workbench") }
-        super.onCleared()
-    }
-
     override suspend fun handleIntent(intent: BrowserWorkbenchIntent) {
         when (intent) {
-            is BrowserWorkbenchIntent.Select -> updateState { copy(selectedId = intent.id, error = null) }
+            is BrowserWorkbenchIntent.Select -> updateState {
+                val tab = tabs.firstOrNull { it.id == intent.id } ?: return@updateState this
+                copy(selectedId = tab.id, address = tab.url, error = null)
+            }
             is BrowserWorkbenchIntent.Address -> updateState { copy(address = intent.value) }
             BrowserWorkbenchIntent.Open -> {
                 val result = browser.execute("manual-workbench", BrowserRequest(BrowserCommand.OPEN, url = currentState.address))
@@ -55,6 +53,12 @@ class BrowserWorkbenchViewModel : ComposeMVIViewModel<BrowserWorkbenchIntent, Br
                     result.tab?.let { tab -> browser.setHumanControl(tab.id, true) }
                     updateState { copy(selectedId = result.tab?.id ?: selectedId, error = null) }
                 } else updateState { copy(error = result.message) }
+            }
+            is BrowserWorkbenchIntent.Navigate -> currentState.tabs.firstOrNull { it.id == currentState.selectedId }?.let { tab ->
+                val result = (browser as AndroidBrowserService).navigateManually(
+                    BrowserRequest(intent.command, tabId = tab.id, url = currentState.address),
+                )
+                updateState { copy(error = result.message.takeUnless { result.ok }) }
             }
             BrowserWorkbenchIntent.ToggleControl -> currentState.tabs.firstOrNull { it.id == currentState.selectedId }?.let { tab ->
                 browser.setHumanControl(tab.id, !tab.humanControl)

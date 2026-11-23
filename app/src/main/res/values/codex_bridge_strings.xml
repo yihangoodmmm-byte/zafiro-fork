@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="codex_title">桌面 Codex</string>
+    <string name="codex_endpoint">桥接地址（HTTPS）</string>
+    <string name="codex_token">桥接令牌</string>
+    <string name="codex_cwd">电脑上的项目路径</string>
+    <string name="codex_prompt">任务内容</string>
+    <string name="codex_health">检查连接</string>
+    <string name="codex_wait">等待桌面响应</string>
+    <string name="codex_http">桥接请求失败：HTTP %1$d</string>
+    <string name="codex_ok">桥接请求成功</string>
+    <string name="codex_failed">未收到成功响应，请检查桌面状态后再试。</string>
+    <string name="codex_confirm_run">将任务和项目路径发送到所填的桌面桥？</string>
+    <string name="codex_confirm_stop">请求桌面桥停止当前任务？</string>
+</resources>

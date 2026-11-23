@@ -24,6 +24,7 @@ import com.niki914.zafiro.chat.prompt.PromptComposer
 import com.niki914.zafiro.chat.prompt.PromptSkill
 import com.niki914.zafiro.chat.agentic.ToolManager
 import com.niki914.zafiro.chat.agentic.WorkflowPlanTool
+import com.niki914.zafiro.chat.agentic.WorkspaceTurnReviews
 import com.niki914.zafiro.chat.agentic.shell.TerminalSessionPool
 import com.niki914.zafiro.settings.RuntimeEnvironment
 import com.niki914.zafiro.settings.model.DEFAULT_CONTEXT_WINDOW_TOKENS
@@ -33,6 +34,8 @@ import com.niki914.zafiro.api.util.runCatchingCancellable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -413,7 +416,10 @@ class AgentSessionEngine {
             } else {
                 null
             }
+            var review: WorkspaceTurnReviews.Capture? = null
+            var interrupted = true
             try {
+                review = workspace?.let { WorkspaceTurnReviews.begin(it) }
                 streamPipeline.execute(
                     session = state.okia,
                     query = effectiveQuery,
@@ -426,9 +432,14 @@ class AgentSessionEngine {
                     thinkingLevel = options.reasoningEffort?.let { ThinkingLevel.fromWire(it.wireValue) },
                     channel = this,
                 )
+                interrupted = false
             } finally {
                 if (plan != null && toolRegistry.find(planDescriptor.wireName)?.executor === plan) {
                     toolRegistry.remove(planDescriptor.wireName)
+                }
+                val capture = review
+                if (workspace != null && capture != null) withContext(NonCancellable) {
+                    WorkspaceTurnReviews.finish(workspace, capture, interrupted)
                 }
             }
         } catch (throwable: Throwable) {

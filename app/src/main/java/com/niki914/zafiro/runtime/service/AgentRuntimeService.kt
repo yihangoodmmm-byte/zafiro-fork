@@ -75,12 +75,16 @@ class AgentRuntimeService : Service() {
 
             ResidentNotificationBuilder.ACTION_APPROVE -> {
                 Logger.i(LOG_TAG, "Resident notification: Approve clicked")
-                ResidentNotificationManager.resolveApproval(ApprovalDecision.Allow)
+                ResidentNotificationManager.resolveApproval(
+                    ApprovalDecision.Allow, intent.getStringExtra(ResidentNotificationBuilder.EXTRA_APPROVAL_TOKEN),
+                )
             }
 
             ResidentNotificationBuilder.ACTION_DECLINE -> {
                 Logger.i(LOG_TAG, "Resident notification: Decline clicked")
-                ResidentNotificationManager.resolveApproval(ApprovalDecision.Deny)
+                ResidentNotificationManager.resolveApproval(
+                    ApprovalDecision.Deny, intent.getStringExtra(ResidentNotificationBuilder.EXTRA_APPROVAL_TOKEN),
+                )
             }
 
             ACTION_START_RESIDENT -> {

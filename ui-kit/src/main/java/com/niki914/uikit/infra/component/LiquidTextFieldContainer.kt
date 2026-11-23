@@ -258,6 +258,7 @@ internal fun LiquidTextFieldContainer(
                                 leadingContent(this@Row)
                             }
                         }
+                        expandedActionsRow(this@Row)
                         if (trailingContent != null) {
                             CompositionLocalProvider(LocalContentColor provides trailingColor) {
                                 trailingContent(this@Row)

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="catalog_diagnostic_title">Model catalogue diagnostics</string>
+    <string name="catalog_diagnostic_ok">Catalogue request succeeded; inference was not tested.</string>
+    <string name="catalog_diagnostic_pending">Checking model catalogue</string>
+    <string name="catalog_diagnostic_auth">Access denied. Check the API key and permissions.</string>
+    <string name="catalog_diagnostic_unavailable">The provider does not expose this catalogue endpoint.</string>
+    <string name="catalog_diagnostic_rate">Rate limited. Try again later.</string>
+    <string name="catalog_diagnostic_server">The provider returned a server error.</string>
+    <string name="catalog_diagnostic_tls">Could not establish a secure connection.</string>
+    <string name="catalog_diagnostic_timeout">The catalogue request timed out.</string>
+    <string name="catalog_diagnostic_dns">Could not resolve the provider hostname.</string>
+    <string name="catalog_diagnostic_failed">Could not read the model catalogue.</string>
+</resources>

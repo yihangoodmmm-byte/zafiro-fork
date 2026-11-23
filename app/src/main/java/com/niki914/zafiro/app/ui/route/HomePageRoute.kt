@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import com.niki914.zafiro.app.ui.content.HomePageContent
 import com.niki914.zafiro.app.ui.nav.ConversationHistoryPage
 import com.niki914.zafiro.app.ui.nav.SettingsHomePage
+import com.niki914.zafiro.app.ui.nav.ProjectWorkbenchPage
+import com.niki914.zafiro.app.ui.nav.ProjectRunsPage
 import com.niki914.zafiro.app.ui.nav.ZafiroPage
 
 @Composable
@@ -23,6 +25,8 @@ internal fun HomePageRoute(
         onOpenHistory = {
             onPushFromLeft(ConversationHistoryPage)
         },
+        onOpenProject = { onPush(ProjectWorkbenchPage) },
+        onOpenRuns = { onPush(ProjectRunsPage) },
         onOpenSettings = {
             onPush(SettingsHomePage)
         },

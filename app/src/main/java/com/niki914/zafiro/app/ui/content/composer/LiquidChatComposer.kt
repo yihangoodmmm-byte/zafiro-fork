@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Tune
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +61,10 @@ fun LiquidChatComposer(
     onWorkspaceClick: () -> Unit = {},
     taskOptionsActive: Boolean = false,
     onTaskOptionsClick: () -> Unit = {},
+    sendAvailable: Boolean = true,
+    reasoningEffortLabel: String? = null,
+    reasoningEffortShortLabel: String? = null,
+    onReasoningEffortClick: () -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     val workspaceTitle = stringResource(R.string.ui_home_workspace_title)
@@ -75,7 +81,7 @@ fun LiquidChatComposer(
     val taskOptionsTitle = stringResource(
         if (taskOptionsActive) R.string.ui_home_task_options_active else R.string.ui_home_task_options,
     )
-    val canSend = !isResolvingWorkspace && (value.isNotBlank() || pendingImages.isNotEmpty() || pendingFiles.isNotEmpty())
+    val canSend = sendAvailable && !isResolvingWorkspace && (value.isNotBlank() || pendingImages.isNotEmpty() || pendingFiles.isNotEmpty())
     val ringColor = when {
         isGenerating -> colors.onError
         canSend -> colors.onPrimary
@@ -117,6 +123,20 @@ fun LiquidChatComposer(
                     contentDescription = taskOptionsTitle,
                     tint = if (taskOptionsActive) colors.primary else colors.onSurfaceVariant,
                 )
+            }
+            if (reasoningEffortLabel != null) {
+                val title = stringResource(R.string.ui_home_reasoning_effort)
+                IconButton(
+                    onClick = onReasoningEffortClick,
+                    modifier = Modifier.size(ControlSize).semantics {
+                        contentDescription = title
+                        stateDescription = reasoningEffortLabel
+                    },
+                ) {
+                    if (reasoningEffortShortLabel == null) Icon(Icons.Default.Psychology, contentDescription = null)
+                    else Text(reasoningEffortShortLabel, color = colors.primary, maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall)
+                }
             }
             FilledIconButton(
                 onClick = if (isGenerating) onStopClick else onSendClick,

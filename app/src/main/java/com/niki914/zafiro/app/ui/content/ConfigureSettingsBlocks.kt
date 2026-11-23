@@ -152,6 +152,13 @@ internal fun ConfigureConnectionSettingsBlock(
             maxLines = 1,
             fieldTrailingContent = catalogButton,
         )
+        uiState.modelCatalogStatus?.let { status ->
+            SettingsItemDivider()
+            SettingsListItem(
+                title = stringResource(R.string.catalog_diagnostic_title),
+                summary = stringResource(status),
+            )
+        }
         if (policy.showEndpointSection) {
             SettingsItemDivider()
             val endpointEditable = policy.endpointEditable &&

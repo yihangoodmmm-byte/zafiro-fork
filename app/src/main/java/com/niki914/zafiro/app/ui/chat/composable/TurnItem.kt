@@ -60,6 +60,8 @@ internal fun TurnItem(
     onReGenerate: () -> Unit = {},
     onFork: () -> Unit = {},
     onRewind: () -> Unit = {},
+    onReadAloud: (() -> Unit)? = null,
+    isReadingAloud: Boolean = false,
     branchIndex: Int = 1,
     branchCount: Int = 1,
     onSwitchBranch: (Int) -> Unit = {},
@@ -150,7 +152,7 @@ internal fun TurnItem(
 
                 // 助手操作栏：严格遵守完成态护栏（生成中绝不露出）
                 AnimatedVisibility(
-                    visible = canToggleAgentAction && (alwaysVisible || showAgentActionRow),
+                    visible = canToggleAgentAction && (alwaysVisible || showAgentActionRow || isReadingAloud),
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut(),
                 ) {
@@ -167,6 +169,8 @@ internal fun TurnItem(
                             onReGenerate = onReGenerate,
                             onFork = onFork,
                             onRewind = onRewind,
+                            onReadAloud = onReadAloud,
+                            isReadingAloud = isReadingAloud,
                             branchIndex = branchIndex,
                             branchCount = branchCount,
                             onSwitchBranch = onSwitchBranch,

@@ -12,6 +12,10 @@ import com.niki914.zafiro.repo.CloudModelFacts
 import com.niki914.zafiro.repo.LlmConfigsDocument
 import com.niki914.zafiro.repo.ModelCatalog
 import com.niki914.zafiro.repo.ModelCatalogApi
+import com.niki914.zafiro.repo.ModelCatalogHttpException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 import com.niki914.zafiro.repo.SavedLlmConfig
 import com.niki914.zafiro.repo.TokenCountText
 import com.niki914.zafiro.repo.XRepo
@@ -99,6 +103,7 @@ data class ConfigureUiState(
     val pendingEndpointMismatch: EndpointMismatch? = null,
     /** 模型目录扫描缓存：为空 = 不显示扫描按钮；非空 = 显示按钮。 */
     val modelCatalog: List<String> = emptyList(),
+    @param:StringRes val modelCatalogStatus: Int? = null,
     /** 非 null 时应弹出模型选择单。 */
     val showModelCatalogSheet: Boolean = false,
 )
@@ -445,6 +450,7 @@ class ConfigureViewModel internal constructor(
                 activeConfigId = document.activeId,
                 // 新会话：目录缓存不跨页复用（同 VM 复用时旧名单不清会误回填）
                 modelCatalog = emptyList(),
+                modelCatalogStatus = null,
                 showModelCatalogSheet = false,
             )
             next
@@ -497,6 +503,7 @@ class ConfigureViewModel internal constructor(
                 activeConfigId = document.activeId,
                 // 新会话：目录缓存不跨页复用（同 VM 复用时旧名单不清会误回填）
                 modelCatalog = emptyList(),
+                modelCatalogStatus = null,
                 showModelCatalogSheet = false,
             )
             // 快照必须取自初始化后的状态，否则未修改也会被判为 dirty
@@ -546,6 +553,7 @@ class ConfigureViewModel internal constructor(
                 activeConfigId = document.activeId,
                 // 新会话：目录缓存不跨页复用（同 VM 复用时旧名单不清会误回填）
                 modelCatalog = emptyList(),
+                modelCatalogStatus = null,
                 showModelCatalogSheet = false,
             )
             // 快照必须取自初始化后的状态，否则未修改也会被判为 dirty
@@ -558,6 +566,7 @@ class ConfigureViewModel internal constructor(
      *  仅当 modelInput 为空时用首个结果回填（手填内容永不覆盖）。 */
     private fun scheduleCatalogFetch(immediate: Boolean = false) {
         catalogFetchJob?.cancel()
+        updateState { copy(modelCatalogStatus = null) }
         // 注意：handleIntent 已跑在 viewModelScope 的 intent 串行通道里；
         // 这里起子协程只为防抖 delay 不阻塞后续 intent，取消语义经 job 传递
         catalogFetchJob = viewModelScope.launch {
@@ -568,13 +577,16 @@ class ConfigureViewModel internal constructor(
                 apiKey = state.apiKeyInput.trim(),
                 protocolWireId = state.protocolWireId,
             )
-            if (key == lastCatalogKey) return@launch
+            if (key == lastCatalogKey) {
+                updateState { copy(modelCatalogStatus = R.string.catalog_diagnostic_ok) }
+                return@launch
+            }
             // 空值短路：Key 或 endpoint 为空直接不发，保留旧缓存
             if (key.endpoint.isBlank() || key.apiKey.isBlank()) return@launch
             val protocol = LlmProtocol.fromWire(key.protocolWireId)
             val modelsUrl = EndpointInference.modelsUrl(key.endpoint, protocol)
                 ?: return@launch
-            lastCatalogKey = key
+            updateState { copy(modelCatalogStatus = R.string.catalog_diagnostic_pending) }
             runCatchingCancellable {
                 val catalog = dependencies.fetchModelCatalog(modelsUrl, key.apiKey, protocol)
                 // 云端事实随同一次响应落缓存：以 endpoint+model 为键，与「保存」解耦。
@@ -586,6 +598,7 @@ class ConfigureViewModel internal constructor(
                         Logger.w(LOG_TAG, "save model facts failed: ${throwable.message}")
                     }
                 }
+                lastCatalogKey = key
                 val ids = catalog.ids
                 // 成功覆盖：空结果也写入（藏按钮），失败走 catch 保留旧缓存
                 updateState {
@@ -593,17 +606,31 @@ class ConfigureViewModel internal constructor(
                     if (modelInput.isBlank() && ids.isNotEmpty()) {
                         copy(
                             modelCatalog = ids,
+                            modelCatalogStatus = R.string.catalog_diagnostic_ok,
                             modelInput = ids.first(),
                             modelErrorResId = null,
                             inlineError = null,
                             showModelCatalogSheet = false,
                         )
                     } else {
-                        copy(modelCatalog = ids)
+                        copy(modelCatalog = ids, modelCatalogStatus = R.string.catalog_diagnostic_ok)
                     }
                 }
             }.onFailure { throwable ->
-                Logger.w(LOG_TAG, "catalog fetch failed: ${throwable.message}")
+                val status = when (throwable) {
+                    is ModelCatalogHttpException -> when (throwable.status) {
+                        401, 403 -> R.string.catalog_diagnostic_auth
+                        404, 405 -> R.string.catalog_diagnostic_unavailable
+                        429 -> R.string.catalog_diagnostic_rate
+                        in 500..599 -> R.string.catalog_diagnostic_server
+                        else -> R.string.catalog_diagnostic_failed
+                    }
+                    is SSLException -> R.string.catalog_diagnostic_tls
+                    is SocketTimeoutException -> R.string.catalog_diagnostic_timeout
+                    is UnknownHostException -> R.string.catalog_diagnostic_dns
+                    else -> R.string.catalog_diagnostic_failed
+                }
+                updateState { copy(modelCatalogStatus = status) }
             }
         }
     }

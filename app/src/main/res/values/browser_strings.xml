@@ -9,4 +9,8 @@
     <string name="browser_release_control">交还 Agent</string>
     <string name="browser_close">关闭分页</string>
     <string name="browser_isolation_notice">分页按 Agent 隔离。查看其他分页不会切换 Agent 的执行目标；接管后才允许手动操作。</string>
+    <string name="browser_back">后退</string>
+    <string name="browser_forward">前进</string>
+    <string name="browser_reload">刷新</string>
+    <string name="browser_go">前往</string>
 </resources>

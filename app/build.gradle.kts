@@ -92,6 +92,8 @@ android {
 
 dependencies {
     implementation(project(":agent-runtime"))
+    implementation(project(":libs:libterm-runtime"))
+    implementation(project(":libs:libterm-core"))
     implementation(project(":business:permission"))
     implementation(project(":business:files"))
     implementation(project(":business:application"))
@@ -108,6 +110,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation(project(":libs:okia"))
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.1.202505221210-r")
 
     // Room
     implementation("androidx.room:room-runtime:2.7.2")
@@ -126,6 +129,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.4.0")
     implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Compose
     implementation("androidx.compose.material3:material3:1.5.0-alpha22")

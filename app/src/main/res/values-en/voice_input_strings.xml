@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_voice_input">Voice input</string>
+    <string name="ui_voice_unavailable">No speech recognition app is available.</string>
+    <string name="ui_voice_read">Read reply aloud</string>
+    <string name="ui_voice_read_stop">Stop reading</string>
+    <string name="ui_voice_read_unavailable">Could not read aloud. Check system text-to-speech settings.</string>
+</resources>

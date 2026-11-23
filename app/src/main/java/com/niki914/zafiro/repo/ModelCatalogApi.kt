@@ -13,7 +13,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import okhttp3.Request
+import java.io.IOException
 import java.util.concurrent.TimeUnit
+
+internal class ModelCatalogHttpException(val status: Int) : IOException("Model catalogue HTTP $status")
 
 private const val LOG_TAG = "niki914_zafiro_ModelCatalogApi"
 
@@ -59,15 +62,9 @@ internal object ModelCatalogApi {
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
         client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw ModelCatalogHttpException(response.code)
             val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                Logger.w(LOG_TAG, "models failed url=$modelsUrl code=${response.code}")
-                error("models HTTP ${response.code}")
-            }
-            Logger.i(
-                LOG_TAG,
-                "models ok url=$modelsUrl bytes=${body.length} shape=${describeCatalogShape(body)}"
-            )
+            Logger.i(LOG_TAG, "Model catalogue received (${body.length} characters)")
             parseCatalog(body)
         }
     }

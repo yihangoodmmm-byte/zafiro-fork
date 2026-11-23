@@ -12,10 +12,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -90,17 +86,9 @@ internal fun HomeTaskOptionsSheet(
     options: ChatTurnOptions,
     onToggleWorkflow: () -> Unit,
     onToggleReasoningGuide: () -> Unit,
-    onSelectReasoningEffort: (ChatReasoningEffort?) -> Unit,
+    onOpenReasoningEffort: () -> Unit,
 ) {
-    var showEffortDialog by rememberSaveable { mutableStateOf(false) }
     val optionsTitle = stringResource(R.string.ui_home_task_options)
-    val effortTitle = stringResource(R.string.ui_home_reasoning_effort)
-    val labels = mapOf(
-        null to stringResource(R.string.ui_home_reasoning_effort_follow),
-        ChatReasoningEffort.Low to stringResource(R.string.ui_home_reasoning_effort_low),
-        ChatReasoningEffort.Medium to stringResource(R.string.ui_home_reasoning_effort_medium),
-        ChatReasoningEffort.High to stringResource(R.string.ui_home_reasoning_effort_high),
-    )
     OptionSheet(
         visible = visible,
         onDismissRequest = onDismissRequest,
@@ -128,22 +116,38 @@ internal fun HomeTaskOptionsSheet(
             onClick = onToggleReasoningGuide,
         )
         OptionRow(
-            title = stringResource(R.string.ui_home_reasoning_effort_label, labels.getValue(options.reasoningEffort)),
-            onClick = { dismissThen { showEffortDialog = true } },
+            title = stringResource(R.string.ui_home_reasoning_effort_label, homeReasoningEffortLabel(options.reasoningEffort)),
+            onClick = { dismissThen(onOpenReasoningEffort) },
         )
     }
+}
+
+@Composable
+internal fun homeReasoningEffortLabel(effort: ChatReasoningEffort?): String = stringResource(when (effort) {
+    null -> R.string.ui_home_reasoning_effort_follow
+    ChatReasoningEffort.Low -> R.string.ui_home_reasoning_effort_low
+    ChatReasoningEffort.Medium -> R.string.ui_home_reasoning_effort_medium
+    ChatReasoningEffort.High -> R.string.ui_home_reasoning_effort_high
+})
+
+@Composable
+internal fun HomeReasoningEffortDialog(
+    visible: Boolean,
+    effort: ChatReasoningEffort?,
+    onDismiss: () -> Unit,
+    onSelect: (ChatReasoningEffort?) -> Unit,
+) {
+    val choices = listOf(null, ChatReasoningEffort.Low, ChatReasoningEffort.Medium, ChatReasoningEffort.High)
+    val labels = choices.map { homeReasoningEffortLabel(it) }
     SingleChoiceLiquidDialog(
-        visible = showEffortDialog,
-        onDismissRequest = { showEffortDialog = false },
-        title = effortTitle,
+        visible = visible,
+        onDismissRequest = onDismiss,
+        title = stringResource(R.string.ui_home_reasoning_effort),
         hint = stringResource(R.string.ui_home_reasoning_effort_hint),
-        options = labels.keys.toList(),
-        selectedId = options.reasoningEffort?.wireValue.orEmpty(),
+        options = choices,
+        selectedId = effort?.wireValue.orEmpty(),
         optionId = { it?.wireValue.orEmpty() },
-        optionLabel = { labels.getValue(it) },
-        onSelect = {
-            showEffortDialog = false
-            onSelectReasoningEffort(it)
-        },
+        optionLabel = { labels[choices.indexOf(it)] },
+        onSelect = onSelect,
     )
 }
