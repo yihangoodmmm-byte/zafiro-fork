@@ -31,6 +31,8 @@ import com.niki914.zafiro.settings.model.RuntimeLlmConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -234,6 +236,7 @@ internal class OkiaSessionAssembler(
         config: ResolvedLlmConfig,
         systemPrompt: String,
         userPrompt: String,
+        allowRegisteredTools: Boolean = false,
     ): String {
         val endpoint = config.endpoint.ifBlank { protocolDefaultEndpointFallback(protocol) }
         val wireProtocol = wireProtocolFor(protocol)
@@ -246,6 +249,7 @@ internal class OkiaSessionAssembler(
             maxTokens = config.maxTokens
             thinkingLevel = config.thinkingLevel
             proxy = config.proxy
+            if (allowRegisteredTools) toolRegistry = this@OkiaSessionAssembler.toolRegistry
             requestLogger = androidRequestLogger
             repetitionConfig = config.repetitionSensitivity.toRepetitionConfig()
         }
@@ -262,7 +266,7 @@ internal class OkiaSessionAssembler(
             }
             return summary
         } finally {
-            session.close()
+            withContext(NonCancellable) { session.close() }
         }
     }
 

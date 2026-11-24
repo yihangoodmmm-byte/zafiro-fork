@@ -33,6 +33,9 @@ internal class ProjectRunHistory(context: Context) {
                     checkExitCode = (row.opt("checkExitCode") as? Number)?.toInt(),
                     checkOutput = (row.opt("checkOutput") as? String).orEmpty(),
                     checking = row.optBoolean("checking"),
+                    artifactPath = row.opt("artifactPath") as? String,
+                    artifactStatus = ProjectArtifactStatus.entries.firstOrNull { it.name == row.optString("artifactStatus") },
+                    artifactAttempts = row.optInt("artifactAttempts"),
                 ))
             }
         }
@@ -51,6 +54,9 @@ internal class ProjectRunHistory(context: Context) {
                 put("checkExitCode", run.checkExitCode ?: JSONObject.NULL)
                 put("checkOutput", run.checkOutput)
                 put("checking", run.checking)
+                put("artifactPath", run.artifactPath ?: JSONObject.NULL)
+                put("artifactStatus", run.artifactStatus?.name ?: JSONObject.NULL)
+                put("artifactAttempts", run.artifactAttempts)
             })
         }
         if (!prefs.edit().putString(path, rows.toString()).commit()) throw IOException("Project run history write failed")

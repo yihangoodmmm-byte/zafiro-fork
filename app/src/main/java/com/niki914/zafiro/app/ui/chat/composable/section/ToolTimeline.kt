@@ -58,6 +58,7 @@ internal fun ToolTimeline(actions: List<ActionUiModel>, active: Boolean, onStop:
                 key(action.key) {
                     val name = action.titleRes?.let { stringResource(it) } ?: action.title.orEmpty()
                     val status = stringResource(when {
+                        action.stepCheckRes == R.string.tool_step_command_pending -> R.string.tool_timeline_waiting_result
                         action.isFailed -> R.string.ui_home_workflow_failed
                         action.isRunning && active -> R.string.ui_home_workflow_executing
                         action.isRunning -> R.string.tool_timeline_unfinished
@@ -67,6 +68,15 @@ internal fun ToolTimeline(actions: List<ActionUiModel>, active: Boolean, onStop:
                         Text(
                             stringResource(R.string.tool_timeline_entry, index + 1, status, name),
                             maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    action.stepCheckRes?.let { checkRes ->
+                        Text(
+                            text = stringResource(checkRes),
+                            modifier = Modifier.padding(start = 12.dp, bottom = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (action.isFailed) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (selected == action.key) {

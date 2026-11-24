@@ -38,6 +38,7 @@ data class SavedLlmConfig(
     val contextWindowText: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val isRole: Boolean = false,
 )
 
 /**
@@ -97,6 +98,7 @@ internal object LlmConfigsSettingsCodec {
                 .takeUnless { it == "0" }.orEmpty(),
             createdAt = obj.long(CREATED_AT_KEY, 0L),
             updatedAt = obj.long(UPDATED_AT_KEY, 0L),
+            isRole = obj.boolean(IS_ROLE_KEY),
         )
     }
 
@@ -118,6 +120,7 @@ internal object LlmConfigsSettingsCodec {
                 CONTEXT_WINDOW_TOKENS_KEY to JsonPrimitive(config.contextWindowText),
                 CREATED_AT_KEY to JsonPrimitive(config.createdAt),
                 UPDATED_AT_KEY to JsonPrimitive(config.updatedAt),
+                IS_ROLE_KEY to JsonPrimitive(config.isRole),
             )
         )
     }
@@ -147,4 +150,5 @@ internal object LlmConfigsSettingsCodec {
     private const val CONTEXT_WINDOW_TOKENS_KEY = "context_window_tokens"
     private const val CREATED_AT_KEY = "created_at"
     private const val UPDATED_AT_KEY = "updated_at"
+    private const val IS_ROLE_KEY = "is_role"
 }

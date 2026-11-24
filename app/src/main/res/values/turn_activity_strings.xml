@@ -8,4 +8,19 @@
     <string name="tool_timeline_show_earlier">显示前 %1$d 项</string>
     <string name="tool_timeline_unfinished">未完成</string>
     <string name="tool_timeline_entry">%1$d. %2$s · %3$s</string>
+    <string name="tool_step_memory_confirmed">验收通过：已回读记忆</string>
+    <string name="tool_step_image_confirmed">验收通过：图片可读且大小一致</string>
+    <string name="tool_step_screen_package_confirmed">验收通过：前台应用匹配</string>
+    <string name="tool_step_screen_observed">已观察屏幕，未指定验收条件</string>
+    <string name="tool_step_mismatch">验收未通过：状态与预期不符</string>
+    <string name="tool_step_unavailable">无法验收：未取得有效证据</string>
+    <string name="tool_step_unchecked">未自动验收</string>
+    <string name="tool_step_command_zero">已确认退出码为 0，未核对业务结果</string>
+    <string name="tool_step_command_nonzero">已确认命令以非零退出码结束</string>
+    <string name="tool_step_command_pending">尚未取得退出码</string>
+    <string name="tool_step_python_completed">Python 已结束，未核对业务结果</string>
+    <string name="tool_step_python_failed">Python 工作进程报告执行错误</string>
+    <string name="tool_step_python_timeout">Python 执行超时</string>
+    <string name="tool_step_mcp_response">远端返回成功，未独立核对外部状态</string>
+    <string name="tool_timeline_waiting_result">等待结果</string>
 </resources>

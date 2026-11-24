@@ -14,4 +14,12 @@
     <string name="project_virtual_launch_failed">未能确认应用在虚拟屏启动。若它已在其他屏幕运行，请先关闭。</string>
     <string name="project_virtual_profile_unsupported">虚拟屏启动应用暂仅支持主用户。</string>
     <string name="project_virtual_unsupported">虚拟屏需要 Android 10 或更新版本。</string>
+    <string name="project_virtual_first_frame">已收到预览首帧</string>
+    <string name="project_virtual_waiting_frame">等待预览首帧</string>
+    <string name="project_virtual_input_sent">输入命令已返回成功，界面效果未验收</string>
+    <string name="project_virtual_launch_confirmed">已确认应用仅出现在该虚拟屏</string>
+    <string name="project_virtual_pixels_changed">输入命令已返回成功；观察到画面变化，未确认目标状态</string>
+    <string name="project_virtual_screenshot_save">保存截图</string>
+    <string name="project_virtual_screenshot_saved">截图已保存到 Pictures/Zafiro</string>
+    <string name="project_virtual_screenshot_failed">未能保存虚拟屏截图</string>
 </resources>

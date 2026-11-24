@@ -3,6 +3,8 @@ package com.niki914.zafiro.app.ui.content.header
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.res.stringResource
+import com.niki914.zafiro.app.R
 import com.niki914.uikit.infra.LiquidMenuItem
 import com.niki914.uikit.infra.LiquidPopover
 import com.niki914.uikit.infra.PopoverAlignment
@@ -35,7 +37,10 @@ internal fun HomeConfigPopover(
         configs.forEach { config ->
             LiquidMenuItem(
                 title = config.name,
-                trailingText = config.modelId.takeIf { it != config.name },
+                trailingText = if (config.isRole) {
+                    stringResource(R.string.chat_role_model, config.modelId)
+                } else config.modelId.takeIf { it != config.name },
+                enabled = !uiState.isGenerating && !uiState.isLoadingConversation,
                 checked = config.id == uiState.activeConfigId,
                 onClick = { onSelectConfig(config.id) },
             )

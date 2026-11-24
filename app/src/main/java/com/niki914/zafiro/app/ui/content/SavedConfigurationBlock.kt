@@ -43,7 +43,7 @@ internal fun SavedConfigurationBlock(
                 key(config.id) {
                     SwipeDismissSettingsItemCard(
                         title = config.name,
-                        summary = config.modelId,
+                        summary = if (config.isRole) stringResource(R.string.chat_role_model, config.modelId) else config.modelId,
                         leadingSlot = SettingLeadingSlot.Selector(
                             selected = config.isActive,
                         ),

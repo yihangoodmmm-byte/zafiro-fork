@@ -12,6 +12,7 @@ import com.niki914.zafiro.app.conversation.TurnBranchState
 import com.niki914.zafiro.app.ui.model.SavedConfigSummary
 import com.niki914.zafiro.chat.LlmErrorCode
 import com.niki914.zafiro.chat.agentic.WorkflowPlanReport
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 
 internal interface HomeConversationStore {
     suspend fun lastOpenedConversationId(): String
@@ -70,6 +71,7 @@ data class HomeToolStatus(
     /** 工具返回的图片引用（view_image / screenshot 等），path 指向 image_cache 落盘文件。 */
     val images: List<HomeChatImage> = emptyList(),
     val workflowReport: WorkflowPlanReport? = null,
+    val stepCheck: StepCheck? = null,
 )
 
 sealed interface HomeChatBlock {

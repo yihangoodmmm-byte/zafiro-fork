@@ -92,6 +92,7 @@ android {
 
 dependencies {
     implementation(project(":agent-runtime"))
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.14.0")
     implementation(project(":libs:libterm-runtime"))
     implementation(project(":libs:libterm-core"))
     implementation(project(":business:permission"))

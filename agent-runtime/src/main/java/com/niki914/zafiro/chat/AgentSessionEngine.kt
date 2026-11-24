@@ -24,6 +24,7 @@ import com.niki914.zafiro.chat.prompt.PromptComposer
 import com.niki914.zafiro.chat.prompt.PromptSkill
 import com.niki914.zafiro.chat.agentic.ToolManager
 import com.niki914.zafiro.chat.agentic.WorkflowPlanTool
+import com.niki914.zafiro.chat.agentic.WorkspaceAcceptanceTool
 import com.niki914.zafiro.chat.agentic.WorkspaceTurnReviews
 import com.niki914.zafiro.chat.agentic.shell.TerminalSessionPool
 import com.niki914.zafiro.settings.RuntimeEnvironment
@@ -169,7 +170,8 @@ class AgentSessionEngine {
     suspend fun refresh(restore: SessionSnapshot? = null): LlmRuntimeSnapshot = refreshMutex.withLock {
         val refreshStartedAtMs = System.currentTimeMillis()
         val gateway = RuntimeEnvironment.awaitSettingsGateway()
-        val llmConfig = gateway.readLlmConfig(configId = boundConfigId.takeIf { it.isNotBlank() })
+        val configId = boundConfigId
+        val llmConfig = gateway.readLlmConfig(configId = configId.takeIf { it.isNotBlank() })
         if (restore == null) {
             sessionAssembler.validateLlmConfig(llmConfig)
         }
@@ -285,6 +287,7 @@ class AgentSessionEngine {
 
         return@withLock LlmRuntimeSnapshot(finalConfig, resolvedTools, prompt).also { snapshot ->
             runtimeState = RuntimeState(
+                configId = configId,
                 snapshot = snapshot,
                 okia = activeSession,
                 sessionProtocol = protocol,
@@ -353,7 +356,7 @@ class AgentSessionEngine {
                 if (throwable is CancellationException) {
                     throw throwable
                 }
-                runtimeState ?: run {
+                runtimeState?.takeIf { it.configId == boundConfigId } ?: run {
                     val code = throwable.toUserErrorCode()
                     val message = throwable.message?.trim()?.ifEmpty { null }
                     Logger.e(
@@ -416,6 +419,9 @@ class AgentSessionEngine {
             } else {
                 null
             }
+            val acceptanceDescriptor = WorkspaceAcceptanceTool.descriptor
+            val acceptance = workspace?.takeIf { options.workflowEnabled && toolRegistry.find(acceptanceDescriptor.wireName) == null }
+                ?.let { WorkspaceAcceptanceTool(it).also { tool -> toolRegistry.register(acceptanceDescriptor, tool) } }
             var review: WorkspaceTurnReviews.Capture? = null
             var interrupted = true
             try {
@@ -436,6 +442,9 @@ class AgentSessionEngine {
             } finally {
                 if (plan != null && toolRegistry.find(planDescriptor.wireName)?.executor === plan) {
                     toolRegistry.remove(planDescriptor.wireName)
+                }
+                if (acceptance != null && toolRegistry.find(acceptanceDescriptor.wireName)?.executor === acceptance) {
+                    toolRegistry.remove(acceptanceDescriptor.wireName)
                 }
                 val capture = review
                 if (workspace != null && capture != null) withContext(NonCancellable) {
@@ -539,6 +548,7 @@ class AgentSessionEngine {
         sessionAssembler.validateLlmConfig(config)
 
     private data class RuntimeState(
+        val configId: String,
         val snapshot: LlmRuntimeSnapshot,
         val okia: Okia,
         val sessionProtocol: LlmProtocol?,

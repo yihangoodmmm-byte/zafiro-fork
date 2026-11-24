@@ -3,6 +3,8 @@ package com.niki914.zafiro.chat.agentic
 import com.niki914.okia.ImageLoader
 import com.niki914.xposed.api.util.ContextProvider
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
+import kotlinx.coroutines.withTimeoutOrNull
 import com.niki914.zafiro.chat.agentic.image.ImageCodec
 import com.niki914.zafiro.chat.agentic.image.ImageFormat
 import com.niki914.zafiro.chat.agentic.image.IngestError
@@ -56,8 +58,26 @@ internal object SharedImageCodec {
 }
 
 /** ingest 成功 → 与 view_image/screenshot 共用的 data.image JSON 结果（契约两工具一致）。 */
-internal fun IngestResult.Ok.toImageToolResult(message: String): BuiltinToolResult =
-    BuiltinToolResult.success(
+internal suspend fun IngestResult.Ok.toImageToolResult(message: String): BuiltinToolResult {
+    val check = try {
+        withTimeoutOrNull(2_000L) {
+            withContext(Dispatchers.IO) {
+                val file = File(image.path)
+                if (image.bytes.toLong() > 0 && file.isFile && file.canRead() &&
+                    file.length() == image.bytes.toLong()
+                ) StepCheck.ImageConfirmed else StepCheck.Mismatch
+            }
+        } ?: StepCheck.Unavailable
+    } catch (_: SecurityException) {
+        StepCheck.Unavailable
+    }
+    if (check != StepCheck.ImageConfirmed) {
+        return BuiltinToolResult.failure(
+            "STEP_CHECK_${check.name.uppercase()}",
+            "The image was processed, but the output file could not be confirmed as readable with the expected size.",
+        ).copy(stepCheck = check)
+    }
+    return BuiltinToolResult.success(
         message = message,
         data = JsonObject(
             mapOf(
@@ -72,7 +92,8 @@ internal fun IngestResult.Ok.toImageToolResult(message: String): BuiltinToolResu
                 )
             )
         )
-    )
+    ).copy(stepCheck = check)
+}
 
 /** IngestError → 工具错误码 JSON 的映射（供 ViewImageBuiltin / ScreenshotBuiltin 使用）。 */
 internal fun IngestError.toToolError(): Pair<String, String> = when (this) {

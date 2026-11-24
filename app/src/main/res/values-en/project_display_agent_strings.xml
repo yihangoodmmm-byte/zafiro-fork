@@ -1,0 +1,8 @@
+<resources>
+    <string name="project_virtual_agent_prompt">Agent instruction</string>
+    <string name="project_virtual_agent_run">Run display agent</string>
+    <string name="project_virtual_agent_approve">Allow this virtual display action?</string>
+    <string name="project_virtual_agent_tap">Tap (%1$d, %2$d)</string>
+    <string name="project_virtual_agent_swipe">Swipe (%1$d, %2$d) to (%3$d, %4$d)</string>
+    <string name="project_virtual_agent_failed">Display agent request failed or timed out</string>
+</resources>

@@ -171,13 +171,17 @@ class HomeChatViewModel internal constructor(
             }
 
             is HomeChatIntent.SelectConfig -> {
+                if (currentState.isLoadingConversation || currentState.isGenerating ||
+                    currentBoundAgent?.status?.value?.isRunning == true ||
+                    currentState.savedConfigs.none { it.id == intent.id }
+                ) return
                 updateState {
                     copy(
                         boundConfigId = intent.id,
                         isConfigMenuVisible = false,
                     )
                 }
-                currentBoundAgent?.bindConfig(intent.id)
+                (currentBoundAgent ?: agent).bindConfig(intent.id)
                 val currentId = currentState.currentConversationId
                 if (!currentId.isNullOrBlank()) {
                     viewModelScope.launch {

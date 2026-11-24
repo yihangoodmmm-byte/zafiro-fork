@@ -4,9 +4,13 @@ import com.niki914.zafiro.chat.agentic.buildin.BuiltinTool
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.zafiro.chat.agentic.buildin.RawJsonBuiltinTool
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
+import com.niki914.zafiro.settings.RuntimeSettingsGateway
 import com.niki914.zafiro.settings.MemoryMutationResult
 import com.niki914.zafiro.settings.RuntimeEnvironment
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -58,12 +62,12 @@ class MemoryBuiltin : BuiltinTool(), RawJsonBuiltinTool {
             when (args.action) {
                 Action.ADD -> {
                     gateway.addMemory(args.content!!)
-                    """{"ok":true,"action":"add"}"""
+                    verifyMutation(gateway, args)
                 }
 
                 Action.REMOVE -> {
                     when (gateway.removeMemory(args.oldText!!)) {
-                        MemoryMutationResult.Ok -> """{"ok":true,"action":"remove"}"""
+                        MemoryMutationResult.Ok -> verifyMutation(gateway, args)
                         MemoryMutationResult.NotFound -> BuiltinToolResult.failure(
                             code = "NOT_FOUND",
                             message = "No entry matched '${args.oldText}'.",
@@ -79,7 +83,7 @@ class MemoryBuiltin : BuiltinTool(), RawJsonBuiltinTool {
 
                 Action.REPLACE -> {
                     when (gateway.replaceMemory(args.oldText!!, args.content!!)) {
-                        MemoryMutationResult.Ok -> """{"ok":true,"action":"replace"}"""
+                        MemoryMutationResult.Ok -> verifyMutation(gateway, args)
                         MemoryMutationResult.NotFound -> BuiltinToolResult.failure(
                             code = "NOT_FOUND",
                             message = "No entry matched '${args.oldText}'.",
@@ -102,6 +106,38 @@ class MemoryBuiltin : BuiltinTool(), RawJsonBuiltinTool {
                 hint = "Retry after confirming the settings provider is available.",
             ).toJsonString()
         }
+    }
+
+    private suspend fun verifyMutation(gateway: RuntimeSettingsGateway, args: Args): String {
+        val entries = try {
+            withTimeoutOrNull(2_000L) { gateway.readMemoriesForVerification() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+        val check = if (entries == null) StepCheck.Unavailable else {
+            val confirmed = when (args.action) {
+                Action.ADD -> args.content!! in entries
+                Action.REMOVE -> entries.none { args.oldText!! in it }
+                Action.REPLACE -> args.content!! in entries && entries.none {
+                    it != args.content && args.oldText!! in it
+                }
+            }
+            if (confirmed) StepCheck.MemoryConfirmed else StepCheck.Mismatch
+        }
+        val action = args.action.name.lowercase()
+        val result = when (check) {
+            StepCheck.MemoryConfirmed -> BuiltinToolResult.success("Memory postcondition confirmed by readback.")
+            StepCheck.Mismatch -> BuiltinToolResult.failure(
+                "STEP_CHECK_MISMATCH", "The memory write returned, but the requested state was not observed. Do not repeat blindly.",
+            )
+            else -> BuiltinToolResult.success(
+                "The memory write returned, but readback was unavailable; the state is not verified. Do not repeat blindly.",
+            )
+        }
+        return JsonObject(Json.parseToJsonElement(result.copy(stepCheck = check).toJsonString()).jsonObject +
+            ("action" to JsonPrimitive(action))).toString()
     }
 
     private fun parseArgs(argumentsJson: String): Args {

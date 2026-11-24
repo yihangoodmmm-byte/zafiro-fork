@@ -71,7 +71,7 @@ interface IAccessibility {
 }
 
 enum class NodeAction { CLICK, LONG_CLICK, SET_TEXT, SCROLL_FORWARD, SCROLL_BACKWARD }
-data class ScreenSnapshot(val yaml: String, val version: String, val nodeCount: Int)
+data class ScreenSnapshot(val yaml: String, val version: String, val nodeCount: Int, val appPackage: String? = null)
 
 object AccessibilityController {
     // 以下各工具失败分支的 "Service unavailable" 是给 LLM 的工具错误 fallback（模型
@@ -425,7 +425,7 @@ object AccessibilityController {
             )
         }
 
-        return Result.success(ScreenSnapshot(yaml, currentVersion, nodeCache.size))
+        return Result.success(ScreenSnapshot(yaml, currentVersion, nodeCache.size, ctx.appPackage))
     }
 
     /**

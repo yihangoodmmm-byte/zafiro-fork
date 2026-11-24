@@ -13,6 +13,7 @@ import com.niki914.zafiro.app.ui.model.ToolPresentation
 import com.niki914.zafiro.app.ui.model.home.HomeChatBlock
 import com.niki914.zafiro.app.ui.model.home.HomeChatTurn
 import com.niki914.zafiro.app.ui.model.home.HomeToolState
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 
 /**
  * 将平铺的 [HomeChatTurn] 映射为结构化、纯分流的 [TurnUiModel]。
@@ -93,6 +94,22 @@ internal fun HomeChatTurn.toTurnUiModel(
                         isUserToggled = isUserToggled,
                         isThinking = false,
                         body = bodyUi,
+                        stepCheckRes = when (block.status.stepCheck) {
+                            StepCheck.MemoryConfirmed -> R.string.tool_step_memory_confirmed
+                            StepCheck.ImageConfirmed -> R.string.tool_step_image_confirmed
+                            StepCheck.ScreenPackageConfirmed -> R.string.tool_step_screen_package_confirmed
+                            StepCheck.ScreenObserved -> R.string.tool_step_screen_observed
+                            StepCheck.Mismatch -> R.string.tool_step_mismatch
+                            StepCheck.Unavailable -> R.string.tool_step_unavailable
+                            StepCheck.CommandExitedZero -> R.string.tool_step_command_zero
+                            StepCheck.CommandExitedNonzero -> R.string.tool_step_command_nonzero
+                            StepCheck.CommandPending -> R.string.tool_step_command_pending
+                            StepCheck.PythonCompleted -> R.string.tool_step_python_completed
+                            StepCheck.PythonFailed -> R.string.tool_step_python_failed
+                            StepCheck.PythonTimedOut -> R.string.tool_step_python_timeout
+                            StepCheck.McpResponse -> R.string.tool_step_mcp_response
+                            null -> if (block.status.state == HomeToolState.Succeeded) R.string.tool_step_unchecked else null
+                        },
                         onToggle = { onToggleAction(actionKey, !isExpanded) },
                     )
                 )

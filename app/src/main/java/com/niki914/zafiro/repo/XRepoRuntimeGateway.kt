@@ -118,6 +118,8 @@ class XRepoRuntimeGateway(
         return repo.skills.getDetail(id)
     }
 
+    override suspend fun readMemoriesForVerification(): List<String> = repo.memory.list()
+
     override suspend fun addMemory(value: String) {
         repo.memory.add(value)
     }

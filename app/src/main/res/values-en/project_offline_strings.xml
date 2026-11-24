@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="project_offline_title">Offline inference</string>
+    <string name="project_offline_installed">Model imported</string>
+    <string name="project_offline_missing">No model imported</string>
+    <string name="project_offline_import">Import .litertlm</string>
+    <string name="project_offline_remove">Remove model</string>
+    <string name="project_offline_prompt">Prompt</string>
+    <string name="project_offline_generate">Generate</string>
+    <string name="project_offline_generating">Generating on device…</string>
+    <string name="project_offline_working">Working with model file…</string>
+    <string name="project_offline_generate_failed">Inference failed. Check model compatibility and device memory.</string>
+    <string name="project_offline_file_failed">Could not process the model file. Check the file and available space.</string>
+</resources>

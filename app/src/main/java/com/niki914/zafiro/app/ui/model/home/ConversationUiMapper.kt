@@ -11,6 +11,7 @@ import com.niki914.zafiro.api.model.TurnFailureCode
 import com.niki914.zafiro.app.ui.model.ToolPresentation
 import com.niki914.zafiro.chat.LlmErrorCode
 import com.niki914.zafiro.chat.agentic.WorkflowPlanReport
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 
 // Tool status is contract-derived; renderer keeps its existing three-state UI model.
 /**
@@ -85,6 +86,9 @@ private fun ToolInvocation.toStatus(outcome: ToolOutcome?): HomeToolStatus {
         name = label,
         state = state,
         resultText = resultText,
+        stepCheck = if (name.startsWith("mcp__") && outcome is ToolOutcome.Succeeded) {
+            StepCheck.McpResponse
+        } else StepCheck.fromResult(name, resultText),
         failedReason = failedReason,
         displayNameRes = ToolPresentation.displayNameResOf(name),
         inputText = ToolPresentation.inputOf(name, argumentsJson),

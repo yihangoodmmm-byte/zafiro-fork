@@ -9,6 +9,7 @@ import com.niki914.zafiro.chat.LocalTool
 import com.niki914.zafiro.chat.ResolvedTools
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolExecutor
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 import com.niki914.zafiro.chat.agentic.buildin.TextToolResult
 import com.niki914.zafiro.chat.agentic.buildin.TextToolResultCodec
 import com.niki914.zafiro.chat.agentic.python.CustomPyToolExecutor
@@ -122,7 +123,8 @@ class LocalToolExecutor(
             .firstOrNull { it.name == name }
             ?: inlineCustomPyTools[name]
         if (customPyTool != null) {
-            return customPyToolExecutor.execute(customPyTool, argumentsJson).also { result ->
+            return customPyToolExecutor.execute(customPyTool, argumentsJson)
+                .let { StepCheck.withoutReceipt(name, it) }.also { result ->
                 Logger.i(
                     LOG_TAG,
                     "local tool done name=$name kind=py resultLength=${result.length} " +

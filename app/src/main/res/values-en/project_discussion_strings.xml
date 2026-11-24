@@ -1,0 +1,10 @@
+<resources>
+    <string name="project_discussion_title">Role discussion</string>
+    <string name="project_discussion_no_roles">At least two saved roles are required</string>
+    <string name="project_discussion_you">You</string>
+    <string name="project_discussion_active">%1$s is replying</string>
+    <string name="project_discussion_failed">Discussion stopped: a role could not reply</string>
+    <string name="project_discussion_prompt">Message</string>
+    <string name="project_discussion_send">Send to selected roles</string>
+    <string name="project_discussion_reset">Clear discussion</string>
+</resources>

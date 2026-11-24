@@ -1,0 +1,10 @@
+<resources>
+    <string name="project_discussion_title">多角色讨论</string>
+    <string name="project_discussion_no_roles">至少需要两个已保存的角色</string>
+    <string name="project_discussion_you">你</string>
+    <string name="project_discussion_active">%1$s 正在回复</string>
+    <string name="project_discussion_failed">讨论已停止：有角色未能回复</string>
+    <string name="project_discussion_prompt">消息</string>
+    <string name="project_discussion_send">发送给所选角色</string>
+    <string name="project_discussion_reset">清空讨论</string>
+</resources>

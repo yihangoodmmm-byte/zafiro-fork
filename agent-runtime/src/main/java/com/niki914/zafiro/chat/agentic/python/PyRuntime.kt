@@ -40,6 +40,7 @@ data class PyExecOutput(
     val output: String,
     val file: File?,
     val timedOut: Boolean,
+    val executionFailed: Boolean = false,
 )
 
 /**
@@ -275,6 +276,7 @@ object PyRuntime {
             output = output,
             file = file?.takeIf { it.exists() },
             timedOut = result.status == PyExecResult.Status.TIMEOUT,
+            executionFailed = result.status == PyExecResult.Status.EXEC_ERROR,
         )
     }
 

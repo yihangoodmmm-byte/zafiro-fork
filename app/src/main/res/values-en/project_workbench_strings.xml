@@ -128,7 +128,7 @@
     <string name="project_schedule_request_failed">Could not confirm the schedule update. Check its status before retrying.</string>
     <string name="project_schedule_earliest">Earliest eligible run: %1$s</string>
     <string name="project_local_preview_scripts">Run preview scripts</string>
-    <string name="project_power_title">Power event trigger</string>
+    <string name="project_power_title">Device event trigger</string>
     <string name="project_power_connected">Power connected</string>
     <string name="project_power_disconnected">Power disconnected</string>
     <string name="project_power_enable">Enable event task</string>
@@ -138,4 +138,18 @@
     <string name="project_run_check_command">Verification command (optional)</string>
     <string name="project_run_check_waiting">Waiting for the main command to succeed</string>
     <string name="project_run_check_skipped">Verification skipped</string>
+    <string name="project_event_screen_on">Screen on</string>
+    <string name="project_event_screen_off">Screen off</string>
+    <string name="project_event_user_present">Device unlocked</string>
+    <string name="project_event_battery_low">Battery low</string>
+    <string name="project_event_battery_okay">Battery recovered</string>
+    <string name="project_schedule_check_summary">Verification command: %1$s</string>
+    <string name="project_schedule_check_incomplete">Verification did not complete</string>
+    <string name="project_run_artifact_path">Artifact to verify (relative path, optional)</string>
+    <string name="project_run_artifact_pass">File exists, is readable, and is not empty</string>
+    <string name="project_run_artifact_missing">File is missing or empty</string>
+    <string name="project_run_artifact_unavailable">Could not check: invalid path or unreadable file</string>
+    <string name="project_run_artifact_pending">Waiting for artifact check</string>
+    <string name="project_run_artifact_attempts">Checked %1$d times</string>
+    <string name="project_schedule_artifact_summary">Artifact: %1$s</string>
 </resources>

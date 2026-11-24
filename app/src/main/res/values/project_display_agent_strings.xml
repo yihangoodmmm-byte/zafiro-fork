@@ -1,0 +1,8 @@
+<resources>
+    <string name="project_virtual_agent_prompt">Agent 指令</string>
+    <string name="project_virtual_agent_run">让 Agent 操作虚拟屏</string>
+    <string name="project_virtual_agent_approve">允许这次虚拟屏操作？</string>
+    <string name="project_virtual_agent_tap">点击 (%1$d, %2$d)</string>
+    <string name="project_virtual_agent_swipe">从 (%1$d, %2$d) 滑到 (%3$d, %4$d)</string>
+    <string name="project_virtual_agent_failed">虚拟屏 Agent 请求失败或超时</string>
+</resources>

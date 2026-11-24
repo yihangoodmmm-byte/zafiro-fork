@@ -47,6 +47,7 @@ data class SavedConfigSummary(
     val providerBrandName: String = "",
     val modelId: String,
     val isActive: Boolean,
+    val isRole: Boolean = false,
 )
 
 internal fun summariesOf(document: LlmConfigsDocument): List<SavedConfigSummary> {
@@ -60,12 +61,17 @@ internal fun summariesOf(document: LlmConfigsDocument): List<SavedConfigSummary>
                 providerBrandName = providerSpec.brandName,
                 modelId = config.model,
                 isActive = config.id == document.activeId,
+                isRole = config.isRole,
             )
         }
 }
 
 data class ConfigureUiState(
     val scene: ConfigureScene = ConfigureScene.Onboarding,
+    val roleSourceId: String? = null,
+    val roleName: String = "",
+    val roleSaving: Boolean = false,
+    val roleSaveFailed: Boolean = false,
     val providerSpec: ProviderSpec = ProviderSpecs.default,
     /** null = 新建草稿（尚未持久化）。 */
     val editingConfigId: String? = null,
@@ -180,6 +186,10 @@ sealed interface ConfigureIntent {
     data object ToggleApiKeyVisibility : ConfigureIntent
     data class ActivateConfig(val configId: String) : ConfigureIntent
     data class DeleteConfig(val configId: String) : ConfigureIntent
+    data class StartRole(val sourceId: String) : ConfigureIntent
+    data class UpdateRoleName(val name: String) : ConfigureIntent
+    data object CancelRole : ConfigureIntent
+    data object SaveRole : ConfigureIntent
     data object Save : ConfigureIntent
     data object ShowModelCatalogSheet : ConfigureIntent
     data object HideModelCatalogSheet : ConfigureIntent
@@ -225,6 +235,7 @@ internal data class ConfigureViewModelDependencies(
     val fetchModelCatalog: suspend (modelsUrl: String, apiKey: String, protocol: LlmProtocol) -> ModelCatalog,
     val saveModelFacts: suspend (endpoint: String, factsByModel: Map<String, CloudModelFacts>) -> Unit,
     val revisions: Flow<Long> = emptyFlow(),
+    val createRole: suspend (String, String) -> Boolean = { _, _ -> false },
 ) {
     companion object {
         val Default = ConfigureViewModelDependencies(
@@ -239,6 +250,7 @@ internal data class ConfigureViewModelDependencies(
                 XRepo.cloudFacts.saveProviderFacts(endpoint, factsByModel)
             },
             revisions = XRepo.llmConfigs.revision,
+            createRole = { id, name -> XRepo.llmConfigs.createRole(id, name) },
         )
     }
 }
@@ -345,6 +357,14 @@ class ConfigureViewModel internal constructor(
 
             is ConfigureIntent.ActivateConfig -> activateConfig(intent.configId)
             is ConfigureIntent.DeleteConfig -> deleteConfig(intent.configId)
+            is ConfigureIntent.StartRole -> if (!currentState.roleSaving) updateState {
+                copy(roleSourceId = intent.sourceId, roleName = "", roleSaveFailed = false)
+            }
+            is ConfigureIntent.UpdateRoleName -> if (!currentState.roleSaving) updateState {
+                copy(roleName = intent.name.take(80), roleSaveFailed = false)
+            }
+            ConfigureIntent.CancelRole -> if (!currentState.roleSaving) updateState { copy(roleSourceId = null) }
+            ConfigureIntent.SaveRole -> saveRole()
             ConfigureIntent.Save -> handleSave()
             ConfigureIntent.ConfirmEndpointMismatch -> confirmEndpointMismatch()
             ConfigureIntent.CancelEndpointMismatch -> cancelEndpointMismatch()
@@ -667,6 +687,24 @@ class ConfigureViewModel internal constructor(
                     summary.copy(isActive = summary.id == configId)
                 },
             )
+        }
+    }
+
+    private suspend fun saveRole() {
+        val sourceId = currentState.roleSourceId ?: return
+        val name = currentState.roleName.trim()
+        if (name.isEmpty() || currentState.roleSaving) return
+        updateState { copy(roleSaving = true, roleSaveFailed = false) }
+        try {
+            val saved = runCatchingCancellable { dependencies.createRole(sourceId, name) }.getOrDefault(false)
+            if (saved) {
+                updateState { copy(roleSourceId = null, roleName = "") }
+                refreshSavedConfigs()
+            } else {
+                updateState { copy(roleSaveFailed = true) }
+            }
+        } finally {
+            updateState { copy(roleSaving = false) }
         }
     }
 

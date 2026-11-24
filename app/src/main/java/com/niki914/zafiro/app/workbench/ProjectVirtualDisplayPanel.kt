@@ -3,6 +3,7 @@ package com.niki914.zafiro.app.workbench
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.SurfaceTexture
+import android.os.Build
 import android.os.Process
 import android.os.UserHandle
 import android.view.MotionEvent
@@ -18,6 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import com.niki914.uikit.infra.ConfirmationLiquidDialog
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,9 +48,24 @@ import com.niki914.zafiro.app.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
+
+private fun TextureView.previewPixels(): IntArray? {
+    if (!isAvailable) return null
+    val frame = try { getBitmap(32, 56) } catch (_: IllegalStateException) { null } ?: return null
+    return try {
+        val values = IntArray(frame.width * frame.height)
+        frame.getPixels(values, 0, frame.width, 0, 0, frame.width, frame.height)
+        values
+    } finally {
+        frame.recycle()
+    }
+}
 
 private data class DisplayApp(val component: ComponentName, val label: String)
 
@@ -56,27 +77,82 @@ internal fun ProjectVirtualDisplayPanel(modifier: Modifier = Modifier) {
     var enabled by remember { mutableStateOf(false) }
     var picker by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<Int?>(null) }
+    var receipt by remember { mutableStateOf<Int?>(null) }
+    var firstFrame by remember { mutableStateOf(false) }
     var session by remember { mutableStateOf<ProjectVirtualDisplay?>(null) }
+    var preview by remember { mutableStateOf<TextureView?>(null) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var apps by remember { mutableStateOf<List<DisplayApp>>(emptyList()) }
 
+    var agentPrompt by remember { mutableStateOf("") }
+    var agentResult by remember { mutableStateOf("") }
+    var proposal by remember { mutableStateOf<Pair<DisplayAgentAction, CompletableDeferred<Boolean>>?>(null) }
+    val approvalLock = remember { Mutex() }
+
     fun release() {
+        proposal?.second?.complete(false)
+        proposal = null
+        agentResult = ""
         operation?.cancel()
         operation = null
         session?.close()
         session = null
         picker = false
+        preview = null
+        firstFrame = false
+        receipt = null
     }
-    fun send(error: Int, action: suspend (ProjectVirtualDisplay) -> Boolean) {
+    fun saveScreenshot() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val target = session ?: return
+        val view = preview ?: return
+        if (!target.valid || !firstFrame || !view.isAvailable || operation?.isActive == true) return
+        failure = null
+        receipt = null
+        operation = scope.launch {
+            val saved = try {
+                val frame = view.getBitmap(ProjectVirtualDisplay.WIDTH, ProjectVirtualDisplay.HEIGHT)
+                if (frame == null) false else try {
+                    saveVirtualDisplayPng(context.contentResolver, frame)
+                } finally {
+                    frame.recycle()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
+            if (session === target) {
+                if (saved) receipt = R.string.project_virtual_screenshot_saved
+                else failure = R.string.project_virtual_screenshot_failed
+                operation = null
+            }
+        }
+    }
+
+    fun send(error: Int, confirmed: Int, observePixels: Boolean = false, action: suspend (ProjectVirtualDisplay) -> Boolean) {
         val target = session ?: return
         if (!target.valid || operation?.isActive == true) return
         failure = null
+        receipt = null
         operation = scope.launch {
+            val view = preview
+            val before = if (observePixels && firstFrame) view?.previewPixels() else null
             val success = try { action(target) }
             catch (e: CancellationException) { throw e }
             catch (_: Exception) { false }
+            val changed = if (success && before != null && view != null) withTimeoutOrNull(600L) {
+                var changed = false
+                while (!changed && session === target && preview === view && target.valid) {
+                    delay(100L)
+                    val after = view.previewPixels()
+                    changed = after != null && !before.contentEquals(after)
+                }
+                changed
+            } == true else false
             if (session === target) {
-                if (!success) failure = error
+                if (success) receipt = if (changed) R.string.project_virtual_pixels_changed else confirmed
+                else failure = error
                 operation = null
             }
         }
@@ -108,6 +184,19 @@ internal fun ProjectVirtualDisplayPanel(modifier: Modifier = Modifier) {
         }
     }
 
+    proposal?.let { (action, approval) ->
+        val detail = when (action.kind) {
+            "tap" -> stringResource(R.string.project_virtual_agent_tap, action.x, action.y)
+            "swipe" -> stringResource(R.string.project_virtual_agent_swipe, action.x, action.y, action.endX, action.endY)
+            else -> stringResource(R.string.project_device_back)
+        }
+        ConfirmationLiquidDialog(
+            visible = true, onDismissRequest = { approval.complete(false) },
+            title = stringResource(R.string.project_virtual_agent_approve), text = detail,
+            negativeButtonText = stringResource(android.R.string.cancel), positiveButtonText = stringResource(android.R.string.ok),
+            onNegativeClick = { approval.complete(false) }, onPositiveClick = { approval.complete(true) },
+        )
+    }
     Column(modifier) {
         Row {
             TextButton(onClick = {
@@ -127,13 +216,59 @@ internal fun ProjectVirtualDisplayPanel(modifier: Modifier = Modifier) {
                 TextButton(onClick = { picker = true }, enabled = operation?.isActive != true) {
                     Text(stringResource(R.string.project_virtual_launch))
                 }
-                TextButton(onClick = { send(R.string.project_virtual_input_failed) { it.back() } }, enabled = operation?.isActive != true) {
+                TextButton(onClick = { send(R.string.project_virtual_input_failed, R.string.project_virtual_input_sent, observePixels = true) { it.back() } }, enabled = operation?.isActive != true) {
                     Text(stringResource(R.string.project_device_back))
                 }
             }
         }
         failure?.let { Text(stringResource(it)) }
-        session?.let { Text(stringResource(R.string.project_virtual_id, it.id)) }
+        receipt?.let { Text(stringResource(it)) }
+        session?.let {
+            TextButton(onClick = ::saveScreenshot, enabled = firstFrame && it.valid && operation?.isActive != true) {
+                Text(stringResource(R.string.project_virtual_screenshot_save))
+            }
+            Text(stringResource(R.string.project_virtual_id, it.id))
+            Text(stringResource(if (firstFrame) R.string.project_virtual_first_frame else R.string.project_virtual_waiting_frame))
+        }
+        if (session?.valid == true && firstFrame) {
+            OutlinedTextField(agentPrompt, { agentPrompt = it.take(1000) }, Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.project_virtual_agent_prompt)) }, singleLine = true,
+                enabled = operation?.isActive != true)
+            TextButton(onClick = {
+                val target = session ?: return@TextButton
+                if (!target.valid || operation?.isActive == true) return@TextButton
+                failure = null
+                agentResult = ""
+                val prompt = agentPrompt.trim()
+                operation = scope.launch {
+                    try {
+                        agentResult = runDisplayAgent(prompt) { action ->
+                            approvalLock.withLock {
+                                if (session !== target || !target.valid) return@withLock false
+                                val approval = CompletableDeferred<Boolean>()
+                                proposal = action to approval
+                                val accepted = try { approval.await() } finally { proposal = null }
+                                if (!accepted || session !== target || !target.valid) false
+                                else if (action.kind == "back") target.back()
+                                else target.gesture(action.x, action.y, action.endX, action.endY, 300)
+                            }
+                        }
+                    } catch (e: CancellationException) {
+                        if (e is TimeoutCancellationException && session === target) {
+                            failure = R.string.project_virtual_agent_failed
+                        }
+                        throw e
+                    } catch (_: Exception) {
+                        if (session === target) failure = R.string.project_virtual_agent_failed
+                    } finally {
+                        if (session === target) operation = null
+                    }
+                }
+            }, enabled = agentPrompt.isNotBlank() && operation?.isActive != true) {
+                Text(stringResource(R.string.project_virtual_agent_run))
+            }
+            if (agentResult.isNotBlank()) Text(agentResult, maxLines = 3)
+        }
         if (enabled) {
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                 val ratio = ProjectVirtualDisplay.WIDTH.toFloat() / ProjectVirtualDisplay.HEIGHT
@@ -158,13 +293,16 @@ internal fun ProjectVirtualDisplayPanel(modifier: Modifier = Modifier) {
                                         }
                                     }.getOrNull()
                                     session = created
+                                    if (created != null) preview = this@apply
                                     if (created == null) {
                                         enabled = false
                                         failure = R.string.project_virtual_create_failed
                                     }
                                 }
                                 override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) = Unit
-                                override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
+                                override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
+                                    if (session?.valid == true && !firstFrame) firstFrame = true
+                                }
                                 override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
                                     release()
                                     surface?.release()
@@ -191,7 +329,7 @@ internal fun ProjectVirtualDisplayPanel(modifier: Modifier = Modifier) {
                                             val endX = if (tap) x else (event.x / view.width * ProjectVirtualDisplay.WIDTH).toInt()
                                             val endY = if (tap) y else (event.y / view.height * ProjectVirtualDisplay.HEIGHT).toInt()
                                             val duration = event.eventTime - event.downTime
-                                            send(R.string.project_virtual_input_failed) { it.gesture(x, y, endX, endY, duration) }
+                                            send(R.string.project_virtual_input_failed, R.string.project_virtual_input_sent, observePixels = true) { it.gesture(x, y, endX, endY, duration) }
                                         }
                                         true
                                     }
@@ -212,7 +350,7 @@ internal fun ProjectVirtualDisplayPanel(modifier: Modifier = Modifier) {
                 OptionRow(title = app.label, onClick = {
                     dismissThen {
                         if (Process.myUserHandle() == UserHandle.getUserHandleForUid(0)) {
-                            send(R.string.project_virtual_launch_failed) { it.launch(app.component, 0) }
+                            send(R.string.project_virtual_launch_failed, R.string.project_virtual_launch_confirmed) { it.launch(app.component, 0) }
                         } else {
                             failure = R.string.project_virtual_profile_unsupported
                         }

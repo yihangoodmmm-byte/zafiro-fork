@@ -79,6 +79,8 @@ internal fun ProjectWorkbenchContent(
     var inspectingDevice by rememberSaveable { mutableStateOf(false) }
     var desktopCodex by remember { mutableStateOf(false) }
     var localPreview by remember { mutableStateOf(false) }
+    var discussion by rememberSaveable { mutableStateOf(false) }
+    var offlineChat by rememberSaveable { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let { send(ProjectIntent.OpenProject(it.toString(), app)) }
     }
@@ -86,8 +88,10 @@ internal fun ProjectWorkbenchContent(
         send(ProjectIntent.Restore(app))
         send(if (openRuns) ProjectIntent.ShowRuns else ProjectIntent.ShowFiles)
     }
-    BackHandler((state.document != null || state.gitVisible || state.runsVisible || state.terminalVisible || reviewing || inspectingDevice || scheduling || desktopCodex || localPreview) && !confirmDiscard) {
+    BackHandler((state.document != null || state.gitVisible || state.runsVisible || state.terminalVisible || reviewing || inspectingDevice || scheduling || desktopCodex || localPreview || offlineChat || discussion) && !confirmDiscard) {
         when {
+            discussion -> discussion = false
+            offlineChat -> offlineChat = false
             localPreview -> localPreview = false
             desktopCodex -> desktopCodex = false
             inspectingDevice -> inspectingDevice = false
@@ -110,12 +114,16 @@ internal fun ProjectWorkbenchContent(
         state.project?.let { Text(it, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         Row(Modifier.horizontalScroll(rememberScrollState())) {
             TextButton(onClick = { picker.launch(null) }, enabled = !state.dirty) { Text(stringResource(R.string.project_pick)) }
+            TextButton(onClick = {
+                discussion = false; localPreview = false; desktopCodex = false; inspectingDevice = false; offlineChat = !offlineChat
+            }) { Text(stringResource(R.string.project_offline_title)) }
+            TextButton(onClick = { offlineChat = false; localPreview = false; desktopCodex = false; inspectingDevice = false; discussion = !discussion }) { Text(stringResource(R.string.project_discussion_title)) }
             TextButton(onClick = onOpenBrowser) { Text(stringResource(R.string.browser_title)) }
             TextButton(onClick = {
-                inspectingDevice = false; desktopCodex = false; localPreview = !localPreview
+                discussion = false; offlineChat = false; inspectingDevice = false; desktopCodex = false; localPreview = !localPreview
             }) { Text(stringResource(R.string.project_local_preview)) }
-            TextButton(onClick = { localPreview = false; desktopCodex = false; inspectingDevice = !inspectingDevice }) { Text(stringResource(R.string.project_device)) }
-            TextButton(onClick = { localPreview = false; inspectingDevice = false; desktopCodex = !desktopCodex }) { Text(stringResource(R.string.codex_title)) }
+            TextButton(onClick = { discussion = false; offlineChat = false; localPreview = false; desktopCodex = false; inspectingDevice = !inspectingDevice }) { Text(stringResource(R.string.project_device)) }
+            TextButton(onClick = { discussion = false; offlineChat = false; localPreview = false; inspectingDevice = false; desktopCodex = !desktopCodex }) { Text(stringResource(R.string.codex_title)) }
             state.project?.let { path ->
                 TextButton(onClick = {
                     projectInstructions = savedInstructions
@@ -150,7 +158,7 @@ internal fun ProjectWorkbenchContent(
             Text(stringResource(text), color = MaterialTheme.colorScheme.error)
         }
         if (reviewing) state.restoredFile?.let { Text(stringResource(R.string.project_restored, it)) }
-        if (!localPreview && !inspectingDevice && !desktopCodex && state.project != null) Row(Modifier.horizontalScroll(rememberScrollState())) {
+        if (!discussion && !offlineChat && !localPreview && !inspectingDevice && !desktopCodex && state.project != null) Row(Modifier.horizontalScroll(rememberScrollState())) {
             TextButton(onClick = { scheduling = false; reviewing = false; send(ProjectIntent.ShowFiles) }) { Text(stringResource(R.string.project_files)) }
             TextButton(onClick = { scheduling = false; reviewing = false; send(ProjectIntent.ShowGit) }) { Text(stringResource(R.string.project_git)) }
             TextButton(onClick = { scheduling = false; reviewing = false; send(ProjectIntent.ShowRuns) }) { Text(stringResource(R.string.project_runs)) }
@@ -158,7 +166,9 @@ internal fun ProjectWorkbenchContent(
             TextButton(onClick = { scheduling = false; reviewing = true }) { Text(stringResource(R.string.project_reviews)) }
             TextButton(onClick = { reviewing = false; scheduling = true }) { Text(stringResource(R.string.project_schedule)) }
         }
-        if (localPreview) ProjectLocalPreview(Modifier.weight(1f))
+        if (discussion) ProjectRoleDiscussion(state.discussion, { send(ProjectIntent.Discussion(it)) }, Modifier.weight(1f))
+        else if (offlineChat) ProjectOfflineChatPanel(app, state.offline, { send(ProjectIntent.Offline(it)) }, Modifier.weight(1f))
+        else if (localPreview) ProjectLocalPreview(Modifier.weight(1f))
         else if (desktopCodex) DesktopCodexPanel(Modifier.weight(1f))
         else if (inspectingDevice) ProjectDevicePanel(Modifier.weight(1f))
         else if (state.project != null) BoxWithConstraints(Modifier.weight(1f)) {
@@ -320,13 +330,15 @@ private fun ProjectRunPanel(state: ProjectWorkbenchState, send: (ProjectIntent) 
         Row(Modifier.fillMaxWidth()) {
             OutlinedTextField(state.command, { send(ProjectIntent.Command(it)) }, Modifier.weight(1f),
                 label = { Text(stringResource(R.string.project_command)) }, singleLine = true)
-            TextButton(onClick = { send(if (running) ProjectIntent.Stop else ProjectIntent.Run(state.command, state.checkCommand)) },
+            TextButton(onClick = { send(if (running) ProjectIntent.Stop else ProjectIntent.Run(state.command, state.checkCommand, state.artifactPath)) },
                 enabled = running || state.command.isNotBlank()) {
                 Text(stringResource(if (running) R.string.project_run_stop else R.string.project_run))
             }
         }
         OutlinedTextField(state.checkCommand, { send(ProjectIntent.CheckCommand(it)) }, Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.project_run_check_command)) }, singleLine = true, enabled = !running)
+        OutlinedTextField(state.artifactPath, { send(ProjectIntent.ArtifactPath(it)) }, Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.project_run_artifact_path)) }, singleLine = true, enabled = !running)
         LazyColumn(Modifier.weight(1f)) {
             state.runs.forEach { run ->
                 item(key = run.id) {
@@ -342,7 +354,7 @@ private fun ProjectRunPanel(state: ProjectWorkbenchState, send: (ProjectIntent) 
                     Text(stringResource(status))
                     run.exitCode?.let { Text(stringResource(R.string.project_schedule_exit, it)) }
                     if (run.status != ProjectRunStatus.Running) {
-                        TextButton(onClick = { send(ProjectIntent.Run(run.command, run.checkCommand)) }, enabled = !running) {
+                        TextButton(onClick = { send(ProjectIntent.Run(run.command, run.checkCommand, run.artifactPath)) }, enabled = !running) {
                             Text(stringResource(R.string.project_run_again))
                         }
                     }
@@ -373,6 +385,7 @@ private fun ProjectRunPanel(state: ProjectWorkbenchState, send: (ProjectIntent) 
                         if (run.checkOutput.isNotBlank()) Text(run.checkOutput, fontFamily = FontFamily.Monospace)
                     }
                 }
+                if (run.artifactPath != null) item { ProjectRunArtifactDetails(run) }
                 item { HorizontalDivider() }
             }
         }
@@ -596,4 +609,21 @@ private fun sourceLineOffset(text: String, line: Int): Int {
         offset = newline + 1
     }
     return offset
+}
+
+@Composable
+internal fun ProjectRunArtifactDetails(run: ProjectRun) {
+    run.artifactPath?.let { path ->
+        Text(path, fontFamily = FontFamily.Monospace)
+        val result = when {
+            run.artifactStatus == ProjectArtifactStatus.Verified -> R.string.project_run_artifact_pass
+            run.artifactStatus == ProjectArtifactStatus.Unavailable -> R.string.project_run_artifact_unavailable
+            run.status == ProjectRunStatus.Stopped || run.status == ProjectRunStatus.Interrupted -> statusForCheck(run.status)
+            run.status == ProjectRunStatus.Running -> R.string.project_run_artifact_pending
+            run.artifactStatus == ProjectArtifactStatus.NotReady -> R.string.project_run_artifact_missing
+            else -> R.string.project_run_check_skipped
+        }
+        Text(stringResource(result))
+        if (run.artifactAttempts > 0) Text(stringResource(R.string.project_run_artifact_attempts, run.artifactAttempts))
+    }
 }

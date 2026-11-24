@@ -34,6 +34,7 @@ data class BuiltinToolResult(
     val hint: String,
     val fieldErrors: Map<String, String>,
     val data: JsonObject,
+    val stepCheck: StepCheck? = null,
 ) {
     fun toJsonString(): String {
         return JsonObject(
@@ -46,7 +47,7 @@ data class BuiltinToolResult(
                     fieldErrors.mapValues { (_, value) -> JsonPrimitive(value) }
                 ),
                 "data" to data,
-            )
+            ) + listOfNotNull(stepCheck?.let { "zafiro_step_check" to JsonPrimitive(it.name) })
         ).toString()
     }
 

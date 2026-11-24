@@ -14,4 +14,12 @@
     <string name="project_virtual_launch_failed">Could not confirm launch on the virtual display. Close the app first if it is running on another display.</string>
     <string name="project_virtual_profile_unsupported">Launching apps on the virtual display currently requires the primary user.</string>
     <string name="project_virtual_unsupported">The virtual display requires Android 10 or later.</string>
+    <string name="project_virtual_first_frame">First preview frame received</string>
+    <string name="project_virtual_waiting_frame">Waiting for first preview frame</string>
+    <string name="project_virtual_input_sent">Input command returned success; UI effect not verified</string>
+    <string name="project_virtual_launch_confirmed">App observed only on this virtual display</string>
+    <string name="project_virtual_pixels_changed">Input command succeeded; pixels changed, but the expected state was not verified</string>
+    <string name="project_virtual_screenshot_save">Save screenshot</string>
+    <string name="project_virtual_screenshot_saved">Screenshot saved to Pictures/Zafiro</string>
+    <string name="project_virtual_screenshot_failed">Could not save the virtual display screenshot</string>
 </resources>

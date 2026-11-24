@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_role_create">Create role from current configuration</string>
+    <string name="chat_role_source">Source: %1$s</string>
+    <string name="chat_role_name">Role name</string>
+    <string name="chat_role_save_failed">Could not create the role. Check for a duplicate name or a missing source configuration.</string>
+    <string name="chat_role_model">Role · %1$s</string>
+</resources>

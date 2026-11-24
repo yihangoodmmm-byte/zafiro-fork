@@ -6,8 +6,13 @@ import com.niki914.zafiro.chat.agentic.accessibility.NodeAction
 import com.niki914.zafiro.chat.agentic.accessibility.ScreenSnapshot
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.zafiro.chat.agentic.buildin.ScreenOperationError
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import com.niki914.zafiro.chat.agentic.buildin.TextResultBuiltinTool
 import com.niki914.zafiro.chat.agentic.buildin.TextToolResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
 /**
@@ -30,6 +35,9 @@ class ScreenOperationAccessibilityBuiltin : TextResultBuiltinTool() {
                 "Target a node by token \"{version}_{i}\" — snapshot version from the YAML header + " +
                 "node index from the i field (e.g. version \"a3f2c91e7b40\" + node {i: 42} → " +
                 "token \"a3f2c91e7b40_42\"). Every successful write op returns the updated tree. " +
+                "For write operations, provide expected_package when the intended foreground app is known. " +
+                "The runtime checks it using the returned tree. A mismatch does not mean the action did not run. " +
+                "Do not replay a write based on a failed check alone. " +
                 "Assemble tokens from the most recently returned result only.\n\n" +
                 "Node fields: i=index, t=semantic_type (button/input/...), b=bounds[left,top,right,bottom], " +
                 "pos=3x3_grid_position, txt=display_text, h=content_description, tap=clickable, " +
@@ -58,6 +66,16 @@ class ScreenOperationAccessibilityBuiltin : TextResultBuiltinTool() {
             return TextToolResult.failure(code, msg)
         }
 
+        val input = Json.parseToJsonElement(request.argumentsJson) as JsonObject
+        val expectedPackage = input["expected_package"]?.let { value ->
+            (value as? JsonPrimitive)?.takeIf { it.isString }?.content
+                ?.takeIf { it.length <= 255 && PACKAGE_NAME.matches(it) }
+                ?: return TextToolResult.failure("INVALID_ARGUMENTS", "expected_package must be an Android app package name.")
+        }
+        if (expectedPackage != null && (args.operation is ScreenOp.Read || args.operation is ScreenOp.Search)) {
+            return TextToolResult.failure("INVALID_ARGUMENTS", "expected_package is only supported for node actions.")
+        }
+
         return when (val op = args.operation) {
             is ScreenOp.Read -> {
                 val capture = captureAfterOptionalWait(args)
@@ -74,23 +92,23 @@ class ScreenOperationAccessibilityBuiltin : TextResultBuiltinTool() {
             }
 
             is ScreenOp.Tap -> executeNodeActionAndCapture(
-                op.token, NodeAction.CLICK, null, args.waitMode, args.waitMs,
+                op.token, NodeAction.CLICK, null, args.waitMode, args.waitMs, expectedPackage,
             )
 
             is ScreenOp.LongClick -> executeNodeActionAndCapture(
-                op.token, NodeAction.LONG_CLICK, null, args.waitMode, args.waitMs,
+                op.token, NodeAction.LONG_CLICK, null, args.waitMode, args.waitMs, expectedPackage,
             )
 
             is ScreenOp.ScrollForward -> executeNodeActionAndCapture(
-                op.token, NodeAction.SCROLL_FORWARD, null, args.waitMode, args.waitMs,
+                op.token, NodeAction.SCROLL_FORWARD, null, args.waitMode, args.waitMs, expectedPackage,
             )
 
             is ScreenOp.ScrollBackward -> executeNodeActionAndCapture(
-                op.token, NodeAction.SCROLL_BACKWARD, null, args.waitMode, args.waitMs,
+                op.token, NodeAction.SCROLL_BACKWARD, null, args.waitMode, args.waitMs, expectedPackage,
             )
 
             is ScreenOp.SetText -> executeNodeActionAndCapture(
-                op.token, NodeAction.SET_TEXT, op.text, args.waitMode, args.waitMs,
+                op.token, NodeAction.SET_TEXT, op.text, args.waitMode, args.waitMs, expectedPackage,
             )
 
             is ScreenOp.Search -> {
@@ -131,28 +149,52 @@ class ScreenOperationAccessibilityBuiltin : TextResultBuiltinTool() {
         text: String?,
         waitMode: String,
         waitMs: Long,
+        expectedPackage: String?,
     ): TextToolResult {
         val actionResult = AccessibilityController.executeNodeAction(token, action, text)
         if (!actionResult.ok) {
             val captureResult = AccessibilityController.captureScreen()
             return assembleActionResult(actionResult, captureResult)
         }
-        val capture = if (waitMode == "delay") {
-            AccessibilityController.captureScreenAfterDelay(waitMs)
-        } else {
-            AccessibilityController.waitForStable(waitMs)
+        val capture = try {
+            if (waitMode == "delay") {
+                AccessibilityController.captureScreenAfterDelay(waitMs)
+            } else {
+                AccessibilityController.waitForStable(waitMs)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
         return capture.fold(
-            onSuccess = { snapshot -> TextToolResult.success(snapshot.yaml) },
-            onFailure = { e ->
+            onSuccess = { snapshot -> checkSnapshot(snapshot, expectedPackage) },
+            onFailure = {
                 TextToolResult.failure(
                     code = ScreenOperationError.CAPTURE_FAILED_AFTER_ACTION.code,
                     message = "The action may have succeeded, but the updated screen tree " +
                             "could not be captured. Read the screen before deciding whether to " +
                             "retry the action.",
-                )
+                ).copy(stepCheck = StepCheck.Unavailable)
             },
         )
+    }
+
+    private fun checkSnapshot(snapshot: ScreenSnapshot, expectedPackage: String?): TextToolResult {
+        val observedPackage = snapshot.appPackage?.takeIf { it.isNotBlank() }
+        return when {
+            expectedPackage == null -> TextToolResult.success(snapshot.yaml).copy(stepCheck = StepCheck.ScreenObserved)
+            observedPackage == null -> TextToolResult.failure(
+                "STEP_CHECK_UNAVAILABLE", "Action ran but the foreground package could not be read. Do not repeat blindly.",
+                snapshot.yaml,
+            ).copy(stepCheck = StepCheck.Unavailable)
+            observedPackage == expectedPackage -> TextToolResult.success(snapshot.yaml)
+                .copy(stepCheck = StepCheck.ScreenPackageConfirmed)
+            else -> TextToolResult.failure(
+                "STEP_CHECK_MISMATCH", "Action ran, but expected foreground app $expectedPackage; saw $observedPackage. Do not repeat blindly.",
+                snapshot.yaml,
+            ).copy(stepCheck = StepCheck.Mismatch)
+        }
     }
 
     /**
@@ -179,6 +221,7 @@ class ScreenOperationAccessibilityBuiltin : TextResultBuiltinTool() {
     }
 
     private companion object {
+        val PACKAGE_NAME = Regex("[A-Za-z][A-Za-z0-9_]*(?:[.][A-Za-z][A-Za-z0-9_]*)*")
         private val SCREEN_ACCESSIBILITY_SCHEMA = """
             {
               "type": "object",
@@ -186,6 +229,10 @@ class ScreenOperationAccessibilityBuiltin : TextResultBuiltinTool() {
                 "operation": {
                   "type": "string",
                   "description": "Which operation: read, tap, long_click, scroll_forward, scroll_backward, set_text, search."
+                },
+                "expected_package": {
+                  "type": "string",
+                  "description": "Optional exact foreground app package expected after a node action."
                 },
                 "token": {
                   "type": "string",

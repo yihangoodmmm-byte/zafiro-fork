@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="project_offline_title">离线推理</string>
+    <string name="project_offline_installed">已导入模型</string>
+    <string name="project_offline_missing">未导入模型</string>
+    <string name="project_offline_import">导入 .litertlm</string>
+    <string name="project_offline_remove">移除模型</string>
+    <string name="project_offline_prompt">输入问题</string>
+    <string name="project_offline_generate">生成</string>
+    <string name="project_offline_generating">正在本机生成…</string>
+    <string name="project_offline_working">正在处理模型文件…</string>
+    <string name="project_offline_generate_failed">推理失败：请检查模型兼容性和设备内存。</string>
+    <string name="project_offline_file_failed">无法处理模型文件，请检查文件和可用空间。</string>
+</resources>

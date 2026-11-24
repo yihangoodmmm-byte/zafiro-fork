@@ -8,4 +8,19 @@
     <string name="tool_timeline_show_earlier">Show %1$d earlier steps</string>
     <string name="tool_timeline_unfinished">Unfinished</string>
     <string name="tool_timeline_entry">%1$d. %2$s · %3$s</string>
+    <string name="tool_step_memory_confirmed">Verified: memory read back</string>
+    <string name="tool_step_image_confirmed">Verified: image file is readable and size matches</string>
+    <string name="tool_step_screen_package_confirmed">Verified: foreground app matches</string>
+    <string name="tool_step_screen_observed">Screen observed; no condition specified</string>
+    <string name="tool_step_mismatch">Verification failed: state did not match</string>
+    <string name="tool_step_unavailable">Verification unavailable: no usable evidence</string>
+    <string name="tool_step_unchecked">Not automatically verified</string>
+    <string name="tool_step_command_zero">Exit code 0 confirmed; task result not checked</string>
+    <string name="tool_step_command_nonzero">Nonzero exit code confirmed</string>
+    <string name="tool_step_command_pending">No exit code yet</string>
+    <string name="tool_step_python_completed">Python completed; task result not checked</string>
+    <string name="tool_step_python_failed">Python worker reported an execution error</string>
+    <string name="tool_step_python_timeout">Python execution timed out</string>
+    <string name="tool_step_mcp_response">MCP reported success; external state not independently checked</string>
+    <string name="tool_timeline_waiting_result">Awaiting result</string>
 </resources>

@@ -5,6 +5,7 @@ data class TextToolResult(
     val payload: String,
     val code: String? = null,
     val message: String? = null,
+    val stepCheck: StepCheck? = null,
 ) {
     enum class Status { Success, Failure }
 

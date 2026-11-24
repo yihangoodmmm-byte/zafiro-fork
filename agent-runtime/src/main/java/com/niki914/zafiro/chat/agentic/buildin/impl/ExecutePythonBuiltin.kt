@@ -2,6 +2,7 @@ package com.niki914.zafiro.chat.agentic.buildin.impl
 
 import com.niki914.zafiro.chat.agentic.ToolExecutionPreflight
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRequest
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 import com.niki914.zafiro.chat.agentic.buildin.TextResultBuiltinTool
 import com.niki914.zafiro.chat.agentic.buildin.TextToolResult
 import com.niki914.zafiro.chat.agentic.python.PyExecOutput
@@ -83,12 +84,19 @@ in the result — read it back with shell commands (e.g. cat) when needed.
         preflight.ensurePathAccess(code)
         return try {
             val result = executor(code, timeoutMs)
-            TextToolResult.success(filter(result))
+            val output = filter(result)
+            when {
+                result.timedOut -> TextToolResult.failure("TIMEOUT", "Python execution timed out.", output)
+                    .copy(stepCheck = StepCheck.PythonTimedOut)
+                result.executionFailed -> TextToolResult.failure("PYTHON_ERROR", "Python worker reported an execution error.", output)
+                    .copy(stepCheck = StepCheck.PythonFailed)
+                else -> TextToolResult.success(output).copy(stepCheck = StepCheck.PythonCompleted)
+            }
         } catch (e: TimeoutCancellationException) {
             TextToolResult.failure(
                 code = "TIMEOUT",
                 message = "Python execution timed out after ${timeoutMs / 1000}s.",
-            )
+            ).copy(stepCheck = StepCheck.PythonTimedOut)
         } catch (e: CancellationException) {
             throw e
         } catch (t: Throwable) {

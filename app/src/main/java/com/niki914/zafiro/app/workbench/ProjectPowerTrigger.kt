@@ -18,6 +18,11 @@ import org.json.JSONObject
 internal enum class ProjectPowerEvent(val action: String) {
     Connected(Intent.ACTION_POWER_CONNECTED),
     Disconnected(Intent.ACTION_POWER_DISCONNECTED),
+    ScreenOn(Intent.ACTION_SCREEN_ON),
+    ScreenOff(Intent.ACTION_SCREEN_OFF),
+    UserPresent(Intent.ACTION_USER_PRESENT),
+    BatteryLow(Intent.ACTION_BATTERY_LOW),
+    BatteryOkay(Intent.ACTION_BATTERY_OKAY),
 }
 
 internal data class ProjectPowerRule(
@@ -25,6 +30,8 @@ internal data class ProjectPowerRule(
     val command: String,
     val event: ProjectPowerEvent,
     val token: String,
+    val checkCommand: String?,
+    val artifactPath: String?,
 )
 
 internal class ProjectPowerTrigger(private val context: Context, private val path: String) {
@@ -36,10 +43,13 @@ internal class ProjectPowerTrigger(private val context: Context, private val pat
 
     fun rule(): ProjectPowerRule? = decode(prefs.all[name] as? String)?.takeIf { it.path == path }
 
-    fun enable(command: String, event: ProjectPowerEvent) {
+    fun enable(command: String, event: ProjectPowerEvent, checkCommand: String?, artifactPath: String?) {
         require(command.isNotBlank() && command.length <= 1024)
+        require(checkCommand == null || (checkCommand.isNotBlank() && checkCommand.length <= 1024))
+        require(artifactPath == null || validProjectArtifactPath(artifactPath))
         val rule = JSONObject().put("path", path).put("command", command)
             .put("event", event.name).put("token", UUID.randomUUID().toString())
+            .put("check", checkCommand).put("artifact", artifactPath)
         if (!prefs.edit().putString(name, rule.toString()).commit()) throw IOException("Trigger save failed")
     }
 
@@ -70,7 +80,8 @@ internal class ProjectPowerTrigger(private val context: Context, private val pat
             return runCatching {
                 val json = JSONObject(value)
                 ProjectPowerRule(json.getString("path"), json.getString("command"),
-                    ProjectPowerEvent.valueOf(json.getString("event")), json.getString("token"))
+                    ProjectPowerEvent.valueOf(json.getString("event")), json.getString("token"),
+                    json.opt("check") as? String, json.opt("artifact") as? String)
             }.getOrNull()
         }
 

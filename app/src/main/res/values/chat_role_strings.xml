@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_role_create">从当前配置创建角色</string>
+    <string name="chat_role_source">来源：%1$s</string>
+    <string name="chat_role_name">角色名称</string>
+    <string name="chat_role_save_failed">无法创建角色。请检查名称是否重复、来源配置是否还存在。</string>
+    <string name="chat_role_model">角色 · %1$s</string>
+</resources>

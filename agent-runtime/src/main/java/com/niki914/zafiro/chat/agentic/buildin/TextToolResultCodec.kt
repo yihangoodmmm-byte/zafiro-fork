@@ -96,7 +96,7 @@ object TextToolResultCodec {
         val code = fields["code"]
         val message = fields["message"]
 
-        return TextToolResult(status, payload, code, message)
+        return TextToolResult(status, payload, code, message, StepCheck.fromWire(fields["step-check"]))
     }
 
     /**
@@ -110,6 +110,7 @@ object TextToolResultCodec {
             "#!tool-result",
             "#!status: ${result.status.name.lowercase()}",
         )
+        result.stepCheck?.let { lines.add("#!step-check: ${it.name}") }
         if (result.status == Status.Failure) {
             if (!result.code.isNullOrEmpty()) {
                 lines.add("#!code: ${result.code}")

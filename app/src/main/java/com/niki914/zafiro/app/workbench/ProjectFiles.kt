@@ -24,6 +24,13 @@ internal data class ProjectSearch(val matches: List<ProjectMatch>, val limited: 
 internal enum class ProjectFileProblem { InvalidDirectory, Inaccessible, OutsideProject, TooLarge, NotText, Changed, GitIdentity, RunHistory, RestoreBusy, AlreadyExists, GitEmptyIndex }
 internal class ProjectFileException(val problem: ProjectFileProblem) : IOException()
 
+internal const val PROJECT_ARTIFACT_PATH_LIMIT = 512
+
+internal fun validProjectArtifactPath(path: String): Boolean =
+    path.isNotBlank() && path.length <= PROJECT_ARTIFACT_PATH_LIMIT &&
+        path.none { it == '\\' || it.isISOControl() } &&
+        path.split('/').none { it.isEmpty() || it == "." || it == ".." || it == ".git" }
+
 /** Native-path backend. A SAF URI is not a shell working directory. */
 internal class ProjectFiles private constructor(val root: File) {
     fun list(relativePath: String): List<ProjectEntry> = children(resolve(relativePath))
@@ -42,6 +49,22 @@ internal class ProjectFiles private constructor(val root: File) {
             fail(ProjectFileProblem.AlreadyExists)
         }
         return relative
+    }
+
+    fun artifactStatus(relativePath: String): ProjectArtifactStatus = try {
+        if (!validProjectArtifactPath(relativePath)) ProjectArtifactStatus.Unavailable else {
+            val path = resolve(relativePath).toPath()
+            when {
+                Files.notExists(path, LinkOption.NOFOLLOW_LINKS) -> ProjectArtifactStatus.NotReady
+                !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(path) -> ProjectArtifactStatus.Unavailable
+                Files.size(path) > 0L -> ProjectArtifactStatus.Verified
+                else -> ProjectArtifactStatus.NotReady
+            }
+        }
+    } catch (_: IOException) {
+        ProjectArtifactStatus.Unavailable
+    } catch (_: SecurityException) {
+        ProjectArtifactStatus.Unavailable
     }
 
     fun readDiagnostic(path: String): ProjectDocument {

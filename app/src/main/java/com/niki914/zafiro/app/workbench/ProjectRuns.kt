@@ -4,12 +4,16 @@ import com.niki914.zafiro.chat.agentic.AgentTenantContext
 import com.niki914.zafiro.chat.agentic.shell.TerminalCommandOutcome
 import com.niki914.zafiro.chat.agentic.shell.TerminalOpenOutcome
 import com.niki914.zafiro.chat.agentic.shell.TerminalSessionPool
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
 internal enum class ProjectRunStatus { Running, Finished, TimedOut, Failed, Stopped, Interrupted }
+internal enum class ProjectArtifactStatus { Verified, NotReady, Unavailable }
+
 internal data class ProjectRun(
     val id: Long,
     val command: String,
@@ -20,6 +24,9 @@ internal data class ProjectRun(
     val checkExitCode: Int? = null,
     val checkOutput: String = "",
     val checking: Boolean = false,
+    val artifactPath: String? = null,
+    val artifactStatus: ProjectArtifactStatus? = null,
+    val artifactAttempts: Int = 0,
 )
 
 internal object ProjectRuns {
@@ -30,13 +37,42 @@ internal object ProjectRuns {
     ): ProjectRun = withContext(AgentTenantContext("workbench-run-" + UUID.randomUUID(), workspacePath = directory)) {
         val main = executeOwned(directory, run)
         val check = run.checkCommand
-        if (check == null || main.status != ProjectRunStatus.Finished || main.exitCode != 0) {
-            return@withContext main
+        if (main.status != ProjectRunStatus.Finished || main.exitCode != 0) return@withContext main
+        val checked = if (check != null) {
+            onChecking(main.copy(status = ProjectRunStatus.Running, checking = true))
+            coroutineContext.ensureActive()
+            val result = executeOwned(directory, ProjectRun(run.id, check))
+            main.copy(status = result.status, checkExitCode = result.exitCode, checkOutput = result.output, checking = true)
+        } else main
+        val artifact = run.artifactPath
+        if (artifact == null || checked.status != ProjectRunStatus.Finished) return@withContext checked
+        onChecking(checked.copy(status = ProjectRunStatus.Running))
+        verifyArtifact(directory, artifact, checked, onChecking)
+    }
+
+    private suspend fun verifyArtifact(
+        directory: String,
+        relativePath: String,
+        run: ProjectRun,
+        onChecking: suspend (ProjectRun) -> Unit,
+    ): ProjectRun {
+        var progress = run
+        for (attempt in 1..3) {
+            val status = withContext(Dispatchers.IO) {
+                try {
+                    val files = ProjectFiles.open(directory)
+                    if (files.root.path == directory) files.artifactStatus(relativePath) else ProjectArtifactStatus.Unavailable
+                } catch (_: ProjectFileException) {
+                    ProjectArtifactStatus.Unavailable
+                }
+            }
+            progress = progress.copy(artifactStatus = status, artifactAttempts = attempt)
+            if (status == ProjectArtifactStatus.Verified) return progress
+            if (status != ProjectArtifactStatus.NotReady || attempt == 3) break
+            onChecking(progress.copy(status = ProjectRunStatus.Running))
+            delay(1_000L)
         }
-        onChecking(main.copy(status = ProjectRunStatus.Running, checking = true))
-        coroutineContext.ensureActive()
-        val result = executeOwned(directory, ProjectRun(run.id, check))
-        main.copy(status = result.status, checkExitCode = result.exitCode, checkOutput = result.output, checking = true)
+        return progress.copy(status = ProjectRunStatus.Failed)
     }
 
     private suspend fun executeOwned(directory: String, run: ProjectRun): ProjectRun {

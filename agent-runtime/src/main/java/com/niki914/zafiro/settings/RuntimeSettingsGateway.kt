@@ -21,6 +21,8 @@ interface RuntimeSettingsGateway {
 
     suspend fun listMcpServers(): List<RuntimeMcpServer>
 
+    suspend fun readMemoriesForVerification(): List<String>? = null
+
     suspend fun addMemory(value: String)
 
     suspend fun removeMemory(oldText: String): MemoryMutationResult

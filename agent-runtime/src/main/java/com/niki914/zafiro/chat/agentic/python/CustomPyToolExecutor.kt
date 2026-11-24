@@ -2,6 +2,7 @@ package com.niki914.zafiro.chat.agentic.python
 
 import com.niki914.zafiro.chat.LocalTool
 import com.niki914.zafiro.chat.agentic.ToolExecutionPreflight
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 import com.niki914.zafiro.util.ToolOutputTruncator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -38,9 +39,15 @@ class CustomPyToolExecutor(
         preflight.ensurePathAccess(tool.code + "\n" + argumentsJson)
         return try {
             val result = exec(CustomPyToolHarness.buildRunner(tool.code, args), tool.timeoutMs)
+            val check = when {
+                result.timedOut -> StepCheck.PythonTimedOut
+                result.executionFailed -> StepCheck.PythonFailed
+                else -> StepCheck.PythonCompleted
+            }
             JsonObject(
                 mapOf(
-                    "ok" to JsonPrimitive(true),
+                    "ok" to JsonPrimitive(check == StepCheck.PythonCompleted),
+                    "zafiro_python_check" to JsonPrimitive(check.name),
                     "tool" to JsonPrimitive(tool.name),
                     "stdout" to JsonPrimitive(
                         ToolOutputTruncator.filterForAgent(
@@ -55,7 +62,8 @@ class CustomPyToolExecutor(
             failureJson(
                 tool.name,
                 "TIMEOUT",
-                "Execution timed out after ${tool.timeoutMs / 1000}s."
+                "Execution timed out after ${tool.timeoutMs / 1000}s.",
+                StepCheck.PythonTimedOut,
             )
         } catch (e: CancellationException) {
             throw e
@@ -74,14 +82,14 @@ class CustomPyToolExecutor(
         return if (element is JsonObject) argumentsJson else "{}"
     }
 
-    private fun failureJson(name: String, code: String, message: String): String {
+    private fun failureJson(name: String, code: String, message: String, check: StepCheck? = null): String {
         return JsonObject(
             mapOf(
                 "ok" to JsonPrimitive(false),
                 "tool" to JsonPrimitive(name),
                 "code" to JsonPrimitive(code),
                 "message" to JsonPrimitive(message),
-            )
+            ) + listOfNotNull(check?.let { "zafiro_python_check" to JsonPrimitive(it.name) })
         ).toString()
     }
 }

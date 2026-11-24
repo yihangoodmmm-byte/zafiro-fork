@@ -6,6 +6,7 @@ import com.niki914.zafiro.chat.agentic.buildin.BuiltinTool
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolRequest
 import com.niki914.zafiro.chat.agentic.buildin.BuiltinToolResult
 import com.niki914.zafiro.chat.agentic.buildin.RawJsonBuiltinTool
+import com.niki914.zafiro.chat.agentic.buildin.StepCheck
 import com.niki914.zafiro.chat.agentic.shell.SessionCommandState
 import com.niki914.zafiro.chat.agentic.shell.SessionRegistry
 import com.niki914.zafiro.chat.agentic.shell.TerminalCloseOutcome
@@ -648,6 +649,9 @@ abstract class BaseSessionBuiltin(
         meta?.alias?.let { payload["alias"] = JsonPrimitive(it) }
         meta?.metadata?.get("identity")?.let { payload["identity"] = JsonPrimitive(it) }
         exitCode?.let { payload["exit_code"] = JsonPrimitive(it) }
+        if (exitCode != null || status == "running") {
+            payload["zafiro_step_check"] = JsonPrimitive(terminalCheck(exitCode).name)
+        }
         payload.putAll(extra)
         return JsonObject(payload).toString()
     }
@@ -663,6 +667,12 @@ abstract class BaseSessionBuiltin(
         return JsonObject(payload).toString()
     }
 
+    private fun terminalCheck(exitCode: Int?) = when (exitCode) {
+        null -> StepCheck.CommandPending
+        0 -> StepCheck.CommandExitedZero
+        else -> StepCheck.CommandExitedNonzero
+    }
+
     protected fun formatCommandResult(
         sessionId: String,
         alias: String?,
@@ -675,6 +685,7 @@ abstract class BaseSessionBuiltin(
             "session_id" to JsonPrimitive(sessionId),
             "output" to JsonPrimitive(prepareReceiptOutput(output)),
             "exit_code" to JsonPrimitive(exitCode),
+            "zafiro_step_check" to JsonPrimitive(terminalCheck(exitCode).name),
             "status" to JsonPrimitive(if (exitCode == 0) "exited" else "failed"),
         )
         alias?.let { payload["alias"] = JsonPrimitive(it) }
@@ -691,6 +702,7 @@ abstract class BaseSessionBuiltin(
         val payload = linkedMapOf<String, JsonElement>(
             "session_id" to JsonPrimitive(sessionId),
             "background" to JsonPrimitive(true),
+            "zafiro_step_check" to JsonPrimitive(StepCheck.CommandPending.name),
             "status" to JsonPrimitive("running"),
             "output" to JsonPrimitive(
                 "Background command started. It runs with status='running'; collect its output later " +
@@ -714,6 +726,7 @@ abstract class BaseSessionBuiltin(
             "session_id" to JsonPrimitive(sessionId),
             "status" to JsonPrimitive("running"),
             "timed_out" to JsonPrimitive(true),
+            "zafiro_step_check" to JsonPrimitive(StepCheck.CommandPending.name),
             "output" to JsonPrimitive(prepareReceiptOutput(output)),
             "message" to JsonPrimitive(
                 "Command did not finish within ${timeoutSec}s. It keeps running in the background with " +

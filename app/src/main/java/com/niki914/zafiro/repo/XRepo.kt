@@ -855,6 +855,7 @@ class LlmConfigsApi internal constructor(
                 proxy = config.proxy.trim(),
                 createdAt = createdAt,
                 updatedAt = nowMillis,
+                isRole = existing?.isRole ?: config.isRole,
             )
             val exists = existing != null
             val updatedConfigs = if (exists) {
@@ -877,6 +878,21 @@ class LlmConfigsApi internal constructor(
         }
         bumpRevision()
         return null
+    }
+
+    internal suspend fun createRole(sourceId: String, name: String): Boolean {
+        val roleName = name.trim()
+        if (roleName.isEmpty() || roleName.length > 80) return false
+        val created = repo.updateJsonOrFalse(StoreDescriptorRegistry.LLM_CONFIGS_ID) { json ->
+            val doc = LlmConfigsSettingsCodec.parse(json)
+            val source = doc.configs.firstOrNull { it.id == sourceId } ?: return@updateJsonOrFalse null
+            if (doc.configs.any { it.name.equals(roleName, ignoreCase = true) }) return@updateJsonOrFalse null
+            val now = System.currentTimeMillis()
+            val role = source.copy(id = newConfigId(), name = roleName, isRole = true, createdAt = now, updatedAt = now)
+            LlmConfigsSettingsCodec.encode(doc.copy(configs = doc.configs + role))
+        }
+        if (created) bumpRevision()
+        return created
     }
 
     suspend fun delete(id: String) {

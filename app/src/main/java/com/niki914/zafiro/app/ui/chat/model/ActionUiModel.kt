@@ -27,5 +27,6 @@ data class ActionUiModel(
     val containerTone: ActionContainerTone = ActionContainerTone.Default,
     val body: ActionBodyUi,
     val onToggle: () -> Unit = {},
+    @param:StringRes val stepCheckRes: Int? = null,
 )
 

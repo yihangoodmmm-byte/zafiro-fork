@@ -1,5 +1,11 @@
 package com.niki914.zafiro.app.ui.content
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Modifier
+import com.niki914.uikit.infra.LiquidDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
@@ -66,6 +72,18 @@ fun ModelConfigSettingsContent(
                 )
             }
 
+            val source = uiState.savedConfigs.firstOrNull { it.id == uiState.activeConfigId }
+                ?: uiState.savedConfigs.firstOrNull()
+            if (source != null) {
+                SettingsGroupCard {
+                    SettingNavigationItem(
+                        title = stringResource(R.string.chat_role_create),
+                        summary = stringResource(R.string.chat_role_source, source.name),
+                        onClick = { viewModel.sendIntent(ConfigureIntent.StartRole(source.id)) },
+                    )
+                }
+            }
+
             SavedConfigurationBlock(
                 configs = uiState.savedConfigs.map { summary ->
                     summary.copy(isActive = summary.id == uiState.activeConfigId)
@@ -85,6 +103,35 @@ fun ModelConfigSettingsContent(
             )
         }
     }
+
+    LiquidDialog(
+        visible = uiState.roleSourceId != null,
+        onDismissRequest = { viewModel.sendIntent(ConfigureIntent.CancelRole) },
+        title = { Text(stringResource(R.string.chat_role_create)) },
+        content = {
+            OutlinedTextField(
+                value = uiState.roleName,
+                onValueChange = { viewModel.sendIntent(ConfigureIntent.UpdateRoleName(it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.chat_role_name)) },
+                enabled = !uiState.roleSaving,
+                singleLine = true,
+                isError = uiState.roleSaveFailed,
+                supportingText = if (uiState.roleSaveFailed) {
+                    { Text(stringResource(R.string.chat_role_save_failed)) }
+                } else null,
+            )
+        },
+        actions = {
+            TextButton(enabled = !uiState.roleSaving, onClick = { viewModel.sendIntent(ConfigureIntent.CancelRole) }) {
+                Text(stringResource(R.string.dialog_cancel))
+            }
+            TextButton(
+                enabled = !uiState.roleSaving && uiState.roleName.isNotBlank(),
+                onClick = { viewModel.sendIntent(ConfigureIntent.SaveRole) },
+            ) { Text(stringResource(R.string.skill_save_action)) }
+        },
+    )
 
     ConfirmationLiquidDialog(
         visible = pendingDeleteConfigId != null,
