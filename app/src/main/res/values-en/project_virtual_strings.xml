@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="project_virtual_mode">Independent virtual display</string>
+    <string name="project_virtual_physical">Back to device panel</string>
+    <string name="project_virtual_create">Create display</string>
+    <string name="project_virtual_close">Close display</string>
+    <string name="project_virtual_launch">Launch app</string>
+    <string name="project_virtual_id">Virtual display #%1$d</string>
+    <string name="project_virtual_permission">Start Shizuku and authorize Zafiro first.</string>
+    <string name="project_virtual_input_failed">Could not send input to the virtual display.</string>
+    <string name="project_virtual_stopped">The virtual display disconnected.</string>
+    <string name="project_virtual_create_failed">Android could not create the virtual display.</string>
+    <string name="project_virtual_no_apps">No launchable apps found.</string>
+    <string name="project_virtual_launch_failed">Could not confirm launch on the virtual display. Close the app first if it is running on another display.</string>
+    <string name="project_virtual_profile_unsupported">Launching apps on the virtual display currently requires the primary user.</string>
+    <string name="project_virtual_unsupported">The virtual display requires Android 10 or later.</string>
+</resources>

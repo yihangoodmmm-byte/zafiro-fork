@@ -5,4 +5,14 @@
     <string name="ui_voice_read">Read reply aloud</string>
     <string name="ui_voice_read_stop">Stop reading</string>
     <string name="ui_voice_read_unavailable">Could not read aloud. Check system text-to-speech settings.</string>
+    <string name="ui_voice_local_input">On-device voice input</string>
+    <string name="ui_voice_local_unavailable">No on-device speech recognition service is available.</string>
+    <string name="ui_voice_permission_denied">Microphone permission was not granted.</string>
+    <string name="ui_voice_language_unavailable">The on-device model for this language is unavailable.</string>
+    <string name="ui_voice_no_match">No speech was recognized.</string>
+    <string name="ui_voice_local_failed">On-device speech recognition failed.</string>
+    <string name="ui_voice_local_timeout">Speech recognition timed out.</string>
+    <string name="ui_voice_listening">Listening…</string>
+    <string name="ui_voice_processing">Recognizing…</string>
+    <string name="ui_voice_finish">Done</string>
 </resources>

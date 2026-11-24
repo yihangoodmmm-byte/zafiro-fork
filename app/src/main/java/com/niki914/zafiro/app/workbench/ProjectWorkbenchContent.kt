@@ -320,11 +320,13 @@ private fun ProjectRunPanel(state: ProjectWorkbenchState, send: (ProjectIntent) 
         Row(Modifier.fillMaxWidth()) {
             OutlinedTextField(state.command, { send(ProjectIntent.Command(it)) }, Modifier.weight(1f),
                 label = { Text(stringResource(R.string.project_command)) }, singleLine = true)
-            TextButton(onClick = { send(if (running) ProjectIntent.Stop else ProjectIntent.Run(state.command)) },
+            TextButton(onClick = { send(if (running) ProjectIntent.Stop else ProjectIntent.Run(state.command, state.checkCommand)) },
                 enabled = running || state.command.isNotBlank()) {
                 Text(stringResource(if (running) R.string.project_run_stop else R.string.project_run))
             }
         }
+        OutlinedTextField(state.checkCommand, { send(ProjectIntent.CheckCommand(it)) }, Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.project_run_check_command)) }, singleLine = true, enabled = !running)
         LazyColumn(Modifier.weight(1f)) {
             state.runs.forEach { run ->
                 item(key = run.id) {
@@ -337,9 +339,10 @@ private fun ProjectRunPanel(state: ProjectWorkbenchState, send: (ProjectIntent) 
                         ProjectRunStatus.Stopped -> R.string.project_run_stopped
                         ProjectRunStatus.Interrupted -> R.string.project_run_interrupted
                     }
-                    Text(stringResource(status) + (run.exitCode?.let { " ($it)" } ?: ""))
+                    Text(stringResource(status))
+                    run.exitCode?.let { Text(stringResource(R.string.project_schedule_exit, it)) }
                     if (run.status != ProjectRunStatus.Running) {
-                        TextButton(onClick = { send(ProjectIntent.Run(run.command)) }, enabled = !running) {
+                        TextButton(onClick = { send(ProjectIntent.Run(run.command, run.checkCommand)) }, enabled = !running) {
                             Text(stringResource(R.string.project_run_again))
                         }
                     }
@@ -355,10 +358,33 @@ private fun ProjectRunPanel(state: ProjectWorkbenchState, send: (ProjectIntent) 
                         }
                     }
                 }
+                run.checkCommand?.let { check ->
+                    item {
+                        Text(stringResource(R.string.project_run_check_command))
+                        Text(check, fontFamily = FontFamily.Monospace)
+                        val checkStatus = when {
+                            run.checkExitCode == 0 -> R.string.project_run_finished
+                            run.checkExitCode != null -> R.string.project_run_failed
+                            run.checking -> statusForCheck(run.status)
+                            run.status == ProjectRunStatus.Running -> R.string.project_run_check_waiting
+                            else -> R.string.project_run_check_skipped
+                        }
+                        Text(stringResource(checkStatus) + (run.checkExitCode?.let { " ($it)" } ?: ""))
+                        if (run.checkOutput.isNotBlank()) Text(run.checkOutput, fontFamily = FontFamily.Monospace)
+                    }
+                }
                 item { HorizontalDivider() }
             }
         }
     }
+}
+
+private fun statusForCheck(status: ProjectRunStatus): Int = when (status) {
+    ProjectRunStatus.Running -> R.string.project_run_running
+    ProjectRunStatus.Finished, ProjectRunStatus.Failed -> R.string.project_run_failed
+    ProjectRunStatus.TimedOut -> R.string.project_run_timeout
+    ProjectRunStatus.Stopped -> R.string.project_run_stopped
+    ProjectRunStatus.Interrupted -> R.string.project_run_interrupted
 }
 
 @Composable

@@ -1,6 +1,8 @@
 package com.niki914.zafiro.app.workbench
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.FilterChip
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,6 +37,23 @@ import java.util.Date
 internal fun ProjectSchedulePanel(project: String) {
     val context = LocalContext.current.applicationContext
     val schedule = remember(context, project) { ProjectSchedule(context, project) }
+    val power = remember(context, project) { ProjectPowerTrigger(context, project) }
+    val powerJobs by power.work.collectAsState(initial = null)
+    var powerRule by remember(project) { mutableStateOf<ProjectPowerRule?>(null) }
+    var powerRuns by remember(project) { mutableStateOf(emptyList<ProjectRun>()) }
+    var powerCommand by rememberSaveable(project) { mutableStateOf("") }
+    var powerEvent by rememberSaveable(project) { mutableStateOf<ProjectPowerEvent?>(null) }
+    var confirmPower by rememberSaveable(project) { mutableStateOf(false) }
+    var powerPending by remember(project) { mutableStateOf(false) }
+    var powerFailed by remember(project) { mutableStateOf(false) }
+    val powerRunning = powerJobs?.any { it.state == WorkInfo.State.RUNNING } == true
+    LaunchedEffect(powerJobs, power, powerPending) {
+        if (!powerPending) {
+            val snapshot = withContext(Dispatchers.IO) { power.rule() to power.history(powerRunning) }
+            powerRule = snapshot.first
+            powerRuns = snapshot.second
+        }
+    }
     val jobs by schedule.work.collectAsState(initial = null)
     val active = jobs?.firstOrNull { !it.state.isFinished }
     var command by rememberSaveable(project) { mutableStateOf("") }
@@ -65,6 +84,22 @@ internal fun ProjectSchedulePanel(project: String) {
             }
         }
     }
+    fun submitPower(operation: () -> Unit) {
+        if (powerPending) return
+        powerPending = true
+        powerFailed = false
+        scope.launch {
+            try {
+                powerRule = withContext(Dispatchers.IO) { operation(); power.rule() }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                powerFailed = true
+            } finally {
+                powerPending = false
+            }
+        }
+    }
     LazyColumn(Modifier.fillMaxSize()) {
         item {
             if (jobs == null) return@item
@@ -91,20 +126,61 @@ internal fun ProjectSchedulePanel(project: String) {
                 TextButton(onClick = { submit(schedule::disable) }, enabled = !pending) { Text(stringResource(R.string.project_schedule_disable)) }
             }
         }
-        items(runs, key = { it.id }) { run ->
-            Text(DateFormat.getDateTimeInstance().format(Date(run.id)))
-            Text(run.command)
-            Text(run.exitCode?.let { stringResource(R.string.project_schedule_exit, it) } ?: stringResource(when (run.status) {
-                ProjectRunStatus.Running -> R.string.project_run_running
-                ProjectRunStatus.Interrupted -> R.string.project_run_interrupted
-                ProjectRunStatus.Stopped -> R.string.project_run_stopped
-                ProjectRunStatus.TimedOut -> R.string.project_run_timeout
-                ProjectRunStatus.Failed -> R.string.project_run_failed
-                ProjectRunStatus.Finished -> R.string.project_run_finished
-            }))
-            if (run.output.isNotBlank()) Text(run.output)
+        item {
+            Text(stringResource(R.string.project_power_title))
+            if (powerFailed) Text(stringResource(R.string.project_schedule_request_failed))
+            val rule = powerRule
+            if (powerJobs != null && rule == null) {
+                Row {
+                    ProjectPowerEvent.entries.forEach { event ->
+                        FilterChip(
+                            selected = powerEvent == event,
+                            onClick = { powerEvent = event },
+                            label = { Text(projectPowerEventLabel(event)) },
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    powerCommand, { powerCommand = it.take(1024) }, Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.project_command)) }, singleLine = true,
+                )
+                TextButton(
+                    onClick = { confirmPower = true },
+                    enabled = !powerPending && powerEvent != null && powerCommand.isNotBlank(),
+                ) { Text(stringResource(R.string.project_power_enable)) }
+            } else if (rule != null) {
+                Text(projectPowerEventLabel(rule.event))
+                Text(rule.command)
+                if (powerRunning) Text(stringResource(R.string.project_run_running))
+                TextButton(
+                    onClick = { submitPower { power.disable().result.get(10, TimeUnit.SECONDS) } },
+                    enabled = !powerPending,
+                ) { Text(stringResource(R.string.project_schedule_disable)) }
+            }
+            if (powerRuns.isNotEmpty()) Text(stringResource(R.string.project_power_history))
         }
+        items(powerRuns, key = { "power-" + it.id }) { ProjectScheduleRunRow(it) }
+        if (runs.isNotEmpty()) item { Text(stringResource(R.string.project_periodic_history)) }
+        items(runs, key = { "periodic-" + it.id }) { ProjectScheduleRunRow(it) }
     }
+    val selectedEvent = powerEvent
+    ConfirmationLiquidDialog(
+        visible = confirmPower && selectedEvent != null,
+        onDismissRequest = { confirmPower = false },
+        title = stringResource(R.string.project_power_enable),
+        text = stringResource(R.string.project_power_confirm,
+            selectedEvent?.let { projectPowerEventLabel(it) }.orEmpty(), powerCommand),
+        negativeButtonText = stringResource(android.R.string.cancel),
+        positiveButtonText = stringResource(R.string.project_power_enable),
+        onNegativeClick = { confirmPower = false },
+        onPositiveClick = {
+            confirmPower = false
+            val selectedCommand = powerCommand
+            if (selectedEvent != null && selectedCommand.isNotBlank()) {
+                submitPower { power.enable(selectedCommand, selectedEvent) }
+            }
+        },
+    )
     ConfirmationLiquidDialog(
         visible = confirming, onDismissRequest = { confirming = false },
         title = stringResource(R.string.project_schedule_enable),
@@ -118,4 +194,25 @@ internal fun ProjectSchedulePanel(project: String) {
             if (interval != null && selectedCommand.isNotBlank()) submit { schedule.enable(selectedCommand, interval) }
         },
     )
+}
+
+@Composable
+private fun projectPowerEventLabel(event: ProjectPowerEvent): String = stringResource(when (event) {
+    ProjectPowerEvent.Connected -> R.string.project_power_connected
+    ProjectPowerEvent.Disconnected -> R.string.project_power_disconnected
+})
+
+@Composable
+private fun ProjectScheduleRunRow(run: ProjectRun) {
+    Text(DateFormat.getDateTimeInstance().format(Date(run.id)))
+    Text(run.command)
+    Text(run.exitCode?.let { stringResource(R.string.project_schedule_exit, it) } ?: stringResource(when (run.status) {
+        ProjectRunStatus.Running -> R.string.project_run_running
+        ProjectRunStatus.Interrupted -> R.string.project_run_interrupted
+        ProjectRunStatus.Stopped -> R.string.project_run_stopped
+        ProjectRunStatus.TimedOut -> R.string.project_run_timeout
+        ProjectRunStatus.Failed -> R.string.project_run_failed
+        ProjectRunStatus.Finished -> R.string.project_run_finished
+    }))
+    if (run.output.isNotBlank()) Text(run.output)
 }

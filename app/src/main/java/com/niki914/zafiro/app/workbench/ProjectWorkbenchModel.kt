@@ -48,6 +48,7 @@ internal data class ProjectWorkbenchState(
     val terminalOutput: String = "",
     val terminalInput: String = "",
     val command: String = "",
+    val checkCommand: String = "",
     val runs: List<ProjectRun> = emptyList(),
     val gitStatus: ProjectGitStatus? = null,
     val gitDiff: ProjectDiff? = null,
@@ -73,7 +74,8 @@ internal sealed interface ProjectIntent {
     data class SetStaged(val change: ProjectGitChange, val staged: Boolean) : ProjectIntent
     data class Commit(val message: String) : ProjectIntent
     data class Command(val text: String) : ProjectIntent
-    data class Run(val command: String) : ProjectIntent
+    data class CheckCommand(val text: String) : ProjectIntent
+    data class Run(val command: String, val checkCommand: String? = null) : ProjectIntent
     data object Stop : ProjectIntent
     data object ShowRuns : ProjectIntent
     data object ShowTerminal : ProjectIntent
@@ -177,7 +179,8 @@ internal class ProjectWorkbenchModel : ComposeMVIViewModel<ProjectIntent, Projec
                 updateState { copy(gitStatus = status, gitDiff = null, problem = null) }
             }
             is ProjectIntent.Command -> updateState { copy(command = intent.text) }
-            is ProjectIntent.Run -> startRun(intent.command)
+            is ProjectIntent.CheckCommand -> updateState { copy(checkCommand = intent.text.take(1024)) }
+            is ProjectIntent.Run -> startRun(intent.command, intent.checkCommand)
             ProjectIntent.Stop -> runJob?.cancel()
             ProjectIntent.ShowRuns -> updateState { copy(runsVisible = true, gitVisible = false, terminalVisible = false) }
             ProjectIntent.ShowTerminal -> updateState { copy(terminalVisible = true, runsVisible = false, gitVisible = false) }
@@ -292,21 +295,27 @@ internal class ProjectWorkbenchModel : ComposeMVIViewModel<ProjectIntent, Projec
         else updateState { copy(terminalFailed = true) }
     }
 
-    private fun startRun(command: String) {
+    private fun startRun(command: String, checkCommand: String?) {
         val directory = currentState.project ?: return
         if (runJob?.isActive == true || currentState.runs.any { it.status == ProjectRunStatus.Running } || command.isBlank()) return
         val storage = history ?: return
-        val run = ProjectRun(++runSequence, command)
+        val run = ProjectRun(++runSequence, command, checkCommand = checkCommand?.take(1024)?.takeIf { it.isNotBlank() })
         val started = (listOf(run) + currentState.runs).take(ProjectRunHistory.LIMIT)
         updateState { copy(runs = started) }
         runJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            var progress = run
             val result = try {
                 recordRuns(storage, directory, started)
-                ProjectRuns.execute(directory, run)
+                ProjectRuns.execute(directory, run) { checking ->
+                    progress = checking
+                    val rows = started.map { if (it.id == run.id) checking else it }
+                    updateState { copy(runs = rows) }
+                    recordRuns(storage, directory, rows)
+                }
             } catch (_: CancellationException) {
-                run.copy(status = ProjectRunStatus.Stopped)
+                progress.copy(status = ProjectRunStatus.Stopped)
             } catch (_: Exception) {
-                run.copy(status = ProjectRunStatus.Failed)
+                progress.copy(status = ProjectRunStatus.Failed)
             }
             val completed = started.map { if (it.id == run.id) result else it }
             withContext(NonCancellable) { recordRuns(storage, directory, completed) }

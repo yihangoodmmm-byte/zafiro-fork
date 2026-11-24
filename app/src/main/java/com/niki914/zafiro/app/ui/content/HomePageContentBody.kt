@@ -205,6 +205,13 @@ internal fun HomePageContentBody(
             }
         }
     }
+    val startLocalVoice = homeOnDeviceVoiceAction(
+        conversationId = uiState.currentConversationId,
+        canStart = isCurrentPage && !uiState.isLoadingConversation,
+        onPhrase = { phrase ->
+            onInputChange(listOf(uiState.input, phrase).filter { it.isNotBlank() }.joinToString("\n"))
+        },
+    )
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
@@ -293,6 +300,7 @@ internal fun HomePageContentBody(
                             onFork = onFork,
                             onRewind = onRewind,
                             isReadingAloud = readoutTurn == turn.id,
+                            onStopExecution = onStopClick,
                             onReadAloud = if (!canRead) null else {
                                 {
                                     if (readoutTurn == turn.id) {
@@ -445,6 +453,11 @@ internal fun HomePageContentBody(
             },
             onFileClick = { filePicker.launch(arrayOf("*/*")) },
             onFolderClick = { folderPicker.launch(null) },
+            onLocalVoiceClick = {
+                readout.stop()
+                readoutTurn = null
+                startLocalVoice()
+            },
             onVoiceClick = {
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                     .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)

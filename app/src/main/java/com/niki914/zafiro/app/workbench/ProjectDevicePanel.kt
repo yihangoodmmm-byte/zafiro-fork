@@ -3,6 +3,7 @@ package com.niki914.zafiro.app.workbench
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +33,14 @@ import kotlinx.coroutines.withContext
 
 @Composable
 internal fun ProjectDevicePanel(modifier: Modifier = Modifier) {
+    var virtualMode by remember { mutableStateOf(false) }
+    if (virtualMode) {
+        Column(modifier.fillMaxSize()) {
+            TextButton(onClick = { virtualMode = false }) { Text(stringResource(R.string.project_virtual_physical)) }
+            ProjectVirtualDisplayPanel(Modifier.weight(1f))
+        }
+        return
+    }
     val configuration = LocalConfiguration.current
     var generation by remember { mutableIntStateOf(0) }
     var permissions by remember { mutableStateOf<Map<Permission, PermissionState>?>(null) }
@@ -67,6 +76,7 @@ internal fun ProjectDevicePanel(modifier: Modifier = Modifier) {
             Text(stringResource(R.string.project_device_display, configuration.screenWidthDp, configuration.screenHeightDp, configuration.densityDpi))
             Text(Build.SUPPORTED_ABIS.joinToString())
             TextButton(onClick = { generation++ }) { Text(stringResource(R.string.project_device_refresh)) }
+            TextButton(onClick = { virtualMode = true }) { Text(stringResource(R.string.project_virtual_mode)) }
         }
         item {
             TextButton(

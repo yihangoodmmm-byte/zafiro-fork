@@ -36,6 +36,7 @@ internal fun HomeChatTurnItem(
     onRewind: (Long) -> Unit,
     onReadAloud: (() -> Unit)? = null,
     isReadingAloud: Boolean = false,
+    onStopExecution: (() -> Unit)? = null,
     expandedActionTurnId: Long?,
     expandedActionSource: ActionSource?,
     activeThinkingKey: String? = null,
@@ -123,6 +124,7 @@ internal fun HomeChatTurnItem(
         branchIndex = branchIndex,
         branchCount = branchCount,
         isTurnActive = isLastTurn && isGenerating,
+        onStopExecution = onStopExecution,
         onSwitchBranch = onSwitchBranch,
         modifier = modifier,
     )

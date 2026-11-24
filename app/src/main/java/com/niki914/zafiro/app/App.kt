@@ -14,6 +14,7 @@ import com.niki914.zafiro.app.notification.ResidentNotificationManager
 import com.niki914.zafiro.app.notification.TurnNotificationManager
 import com.niki914.zafiro.app.overlay.FloatingBallOverlayManager
 import com.niki914.zafiro.app.wakelock.AgentWakeLockController
+import com.niki914.zafiro.app.workbench.ProjectPowerTrigger
 import com.niki914.zafiro.business.permission.Permission
 import com.niki914.zafiro.business.permission.PermissionManager
 import com.niki914.zafiro.business.permission.PermissionState
@@ -77,6 +78,7 @@ class App : Application() {
         observeMcpService()
         observeAgentWakeLock()
         TurnNotificationManager.init(this)
+        ProjectPowerTrigger.register(this)
     }
 
     private fun observeAgentWakeLock() {

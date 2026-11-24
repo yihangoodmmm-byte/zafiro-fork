@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="turn_reply_action">Reply</string>
+    <string name="turn_reply_unavailable">Reply not sent. Open the original conversation to try again.</string>
+    <string name="tool_timeline_summary">Tool activity: %1$d total · %2$d running · %3$d failed</string>
+    <string name="tool_timeline_show">Show timeline</string>
+    <string name="tool_timeline_hide">Hide timeline</string>
+    <string name="tool_timeline_show_earlier">Show %1$d earlier steps</string>
+    <string name="tool_timeline_unfinished">Unfinished</string>
+    <string name="tool_timeline_entry">%1$d. %2$s · %3$s</string>
+</resources>

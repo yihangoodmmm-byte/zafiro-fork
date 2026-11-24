@@ -128,4 +128,14 @@
     <string name="project_schedule_request_failed">未能确认定时任务已更新，请检查当前状态后重试。</string>
     <string name="project_schedule_earliest">最早可运行时间：%1$s</string>
     <string name="project_local_preview_scripts">运行预览脚本</string>
+    <string name="project_power_title">电源事件触发</string>
+    <string name="project_power_connected">接通电源</string>
+    <string name="project_power_disconnected">断开电源</string>
+    <string name="project_power_enable">启用事件任务</string>
+    <string name="project_power_confirm">授权在收到“%1$s”事件后在此项目执行：%2$s。仅监听应用进程存活期间的事件；Android 可能延迟执行。</string>
+    <string name="project_power_history">事件运行记录</string>
+    <string name="project_periodic_history">周期运行记录</string>
+    <string name="project_run_check_command">验收命令（可选）</string>
+    <string name="project_run_check_waiting">等待主命令成功</string>
+    <string name="project_run_check_skipped">未执行验收</string>
 </resources>

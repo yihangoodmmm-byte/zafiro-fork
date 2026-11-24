@@ -53,6 +53,9 @@ interface AgentManager {
      */
     fun destroy(conversationId: String)
 
+    /** Find an existing session without changing the conversation shown in the app. */
+    fun activeAgent(conversationId: String): Agent? = null
+
     /** 全局聚合状态控制面（始终跟随当前 [main]）。 */
     val control: AgentControl
 }

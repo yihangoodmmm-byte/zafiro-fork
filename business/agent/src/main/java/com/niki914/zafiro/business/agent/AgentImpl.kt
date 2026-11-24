@@ -17,6 +17,8 @@ import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
 import com.niki914.zafiro.api.model.Draft
 import com.niki914.zafiro.api.model.DraftImage
+import com.niki914.zafiro.api.model.TurnId
+import com.niki914.zafiro.api.model.TurnOutcome
 import com.niki914.zafiro.api.model.isRunning
 import com.niki914.zafiro.business.agent.AgentImpl.Companion.STATUS_TEXT_THROTTLE_MS
 import com.niki914.zafiro.chat.AgentSessionEngine
@@ -146,15 +148,36 @@ class AgentImpl(
 
     override fun stream(): TurnStart = stream(ChatTurnOptions())
 
-    override fun stream(options: ChatTurnOptions): TurnStart {
-        val draft = draftFlow.value
+    override fun stream(options: ChatTurnOptions): TurnStart =
+        startTurn(draftFlow.value, options, consumeDraft = true)
+
+    override fun replyTo(conversationId: ConversationId, turnId: TurnId, text: String): Boolean {
+        if (text.isBlank() || text.length > 8192) return false
+        return startTurn(Draft(text = text), ChatTurnOptions(), consumeDraft = false) {
+            val current = conversationFlow.value
+            current.id == conversationId && current.turns.lastOrNull()?.id == turnId &&
+                (statusFlow.value as? AgentState.Idle)?.lastOutcome == TurnOutcome.Completed
+        } == TurnStart.Started
+    }
+
+    private fun startTurn(
+        draft: Draft,
+        options: ChatTurnOptions,
+        consumeDraft: Boolean,
+        canStart: () -> Boolean = { true },
+    ): TurnStart {
         if (draft.text.isBlank() && draft.images.isEmpty() && draft.files.isEmpty()) {
             return TurnStart.DraftEmpty
         }
         if (!roundActive.compareAndSet(expect = false, update = true)) return TurnStart.Busy
 
+        if (!canStart()) {
+            roundActive.value = false
+            return TurnStart.Busy
+        }
+
         val query = draft.text
-        val isCompactCommand = draft.images.isEmpty() &&
+        val isCompactCommand = consumeDraft && draft.images.isEmpty() &&
                 draft.files.isEmpty() &&
                 query.trim().equals("/compact", ignoreCase = true)
 
@@ -204,7 +227,7 @@ class AgentImpl(
         val contentImages = images.map {
             ContentBlock.Image(it.path, it.mimeType ?: USER_IMAGE_MIME)
         }
-        draftFlow.value = Draft()
+        if (consumeDraft) draftFlow.value = Draft()
         reducedStatus = AgentStateReducer.startRound()
         emitStatus(reducedStatus.status)
         foldWith(ConversationReducer.startTurn(conversationFlow.value, query, images, files))

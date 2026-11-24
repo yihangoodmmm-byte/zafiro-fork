@@ -3,10 +3,15 @@ package com.niki914.zafiro.app.notification
 import android.app.Application
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import androidx.core.app.NotificationCompat
+import androidx.core.app.RemoteInput
 import com.niki914.logging.Logger
+import com.niki914.zafiro.api.AgentManager
 import com.niki914.zafiro.api.model.AgentState
+import com.niki914.zafiro.api.model.TurnOutcome
 import com.niki914.zafiro.app.MainActivity
+import com.niki914.zafiro.app.R
 import com.niki914.zafiro.app.conversation.ConversationRepo
 import com.niki914.zafiro.business.application.ApplicationService
 import com.niki914.zafiro.business.notification.AppNotificationChannel
@@ -93,6 +98,7 @@ object TurnNotificationManager {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            data = Uri.Builder().scheme("zafiro-turn").appendPath(conversationId).build()
             putExtra(ApplicationService.EXTRA_TARGET_CONVERSATION_ID, conversationId)
         }
         val contentIntent = PendingIntent.getActivity(
@@ -103,6 +109,30 @@ object TurnNotificationManager {
         )
 
         val channelManager = findService<NotificationChannelManager>() ?: return
+        val replyAction = if (state is AgentState.Idle && state.lastOutcome == TurnOutcome.Completed) {
+            val agent = findService<AgentManager>()?.activeAgent(conversationId)
+            val turnId = agent?.takeIf { it.status.value === state }
+                ?.conversation?.value?.turns?.lastOrNull()?.id?.value
+            turnId?.let {
+                val label = context.getString(R.string.turn_reply_action)
+                val replyIntent = Intent(context, TurnReplyReceiver::class.java).apply {
+                    action = TurnReplyReceiver.ACTION_REPLY
+                    data = Uri.Builder().scheme("zafiro-turn-reply")
+                        .appendPath(conversationId).appendPath(it).build()
+                }
+                val pendingReply = PendingIntent.getBroadcast(
+                    context, 0, replyIntent, PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_ONE_SHOT,
+                )
+                NotificationCompat.Action.Builder(0, label, pendingReply)
+                    .addRemoteInput(RemoteInput.Builder(TurnReplyReceiver.KEY_REPLY).setLabel(label).build())
+                    .setAllowGeneratedReplies(false)
+                    .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+                    .setAuthenticationRequired(true)
+                    .build()
+            }
+        } else null
+        val approvalToken = (state as? AgentState.WaitingApproval)?.request
+            ?.let(ResidentNotificationManager::tokenFor)
         channelManager.post(AppNotificationChannel.Alerts, conversationId.hashCode()) {
             val icon =
                 context.applicationInfo.icon.takeIf { it != 0 } ?: android.R.drawable.ic_dialog_info
@@ -113,6 +143,13 @@ object TurnNotificationManager {
             setStyle(NotificationCompat.BigTextStyle().bigText(body))
             setContentIntent(contentIntent)
             setAutoCancel(true)
+            replyAction?.let { addAction(it) }
+            approvalToken?.let { token ->
+                addAction(0, context.getString(R.string.agent_resident_action_approve),
+                    ResidentNotificationBuilder.createApproveIntent(context, token))
+                addAction(0, context.getString(R.string.agent_resident_action_decline),
+                    ResidentNotificationBuilder.createDeclineIntent(context, token))
+            }
         }
     }
 

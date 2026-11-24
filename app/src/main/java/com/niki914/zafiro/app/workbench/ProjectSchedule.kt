@@ -45,23 +45,34 @@ internal class ProjectSchedule(context: Context, private val path: String) {
 class ProjectScheduleWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val path = inputData.getString("path") ?: return@withContext Result.failure()
-        val command = inputData.getString("command")?.takeIf { it.isNotBlank() } ?: return@withContext Result.failure()
-        val schedule = ProjectSchedule(applicationContext, path)
+        val token = inputData.getString(ProjectPowerTrigger.TOKEN)
+        val trigger = token?.let { ProjectPowerTrigger(applicationContext, path) }
+        val periodic = if (trigger == null) ProjectSchedule(applicationContext, path) else null
+        val command = if (trigger != null) {
+            val age = System.currentTimeMillis() - inputData.getLong(ProjectPowerTrigger.EVENT_AT, 0L)
+            if (age !in 0L..ProjectPowerTrigger.EVENT_TTL_MS) return@withContext Result.success()
+            trigger.rule()?.takeIf { it.token == token }?.command ?: return@withContext Result.success()
+        } else inputData.getString("command") ?: return@withContext Result.failure()
+        if (command.isBlank() || command.length > 1024) return@withContext Result.failure()
+        fun record(run: ProjectRun) {
+            if (trigger != null) trigger.record(run) else periodic?.record(run)
+        }
         // A retried worker may have dispatched the previous command before it stopped.
         if (runAttemptCount > 0) return@withContext Result.success()
         val run = ProjectRun(System.currentTimeMillis(), command)
         try {
-            schedule.record(run)
             val files = ProjectFiles.open(path)
+            if (trigger != null && trigger.rule()?.token != token) return@withContext Result.success()
+            record(run)
             val outcome = if (files.root.path == path) ProjectRuns.execute(path, run) else run.copy(status = ProjectRunStatus.Failed)
-            schedule.record(outcome)
+            record(outcome)
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) {
-                runCatching { schedule.record(run.copy(status = ProjectRunStatus.Stopped)) }
+                runCatching { record(run.copy(status = ProjectRunStatus.Stopped)) }
             }
             throw cancelled
         } catch (_: Exception) {
-            runCatching { schedule.record(run.copy(status = ProjectRunStatus.Failed)) }
+            runCatching { record(run.copy(status = ProjectRunStatus.Failed)) }
         }
         Result.success()
     }

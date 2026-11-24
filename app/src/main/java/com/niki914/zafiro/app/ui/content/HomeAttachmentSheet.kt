@@ -22,6 +22,7 @@ internal fun HomeAttachmentSheet(
     onFileClick: () -> Unit,
     onFolderClick: () -> Unit,
     onVoiceClick: () -> Unit,
+    onLocalVoiceClick: () -> Unit,
 ) {
     OptionSheet(
         visible = visible,
@@ -32,6 +33,11 @@ internal fun HomeAttachmentSheet(
             title = stringResource(R.string.ui_voice_input),
             leadingContent = { Icon(Icons.Default.Mic, contentDescription = null) },
             onClick = { dismissThen(onVoiceClick) },
+        )
+        OptionRow(
+            title = stringResource(R.string.ui_voice_local_input),
+            leadingContent = { Icon(Icons.Default.Mic, contentDescription = null) },
+            onClick = { dismissThen(onLocalVoiceClick) },
         )
         OptionRow(
             title = stringResource(R.string.ui_home_attach_photos),

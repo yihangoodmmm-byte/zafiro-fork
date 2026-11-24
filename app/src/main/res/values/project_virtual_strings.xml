@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="project_virtual_mode">独立虚拟屏</string>
+    <string name="project_virtual_physical">返回设备面板</string>
+    <string name="project_virtual_create">创建虚拟屏</string>
+    <string name="project_virtual_close">关闭虚拟屏</string>
+    <string name="project_virtual_launch">启动应用</string>
+    <string name="project_virtual_id">虚拟显示器 #%1$d</string>
+    <string name="project_virtual_permission">请先启动 Shizuku 并授权 Zafiro。</string>
+    <string name="project_virtual_input_failed">未能向虚拟屏发送操作。</string>
+    <string name="project_virtual_stopped">虚拟屏已断开。</string>
+    <string name="project_virtual_create_failed">系统未能创建虚拟屏。</string>
+    <string name="project_virtual_no_apps">没有可启动的应用。</string>
+    <string name="project_virtual_launch_failed">未能确认应用在虚拟屏启动。若它已在其他屏幕运行，请先关闭。</string>
+    <string name="project_virtual_profile_unsupported">虚拟屏启动应用暂仅支持主用户。</string>
+    <string name="project_virtual_unsupported">虚拟屏需要 Android 10 或更新版本。</string>
+</resources>

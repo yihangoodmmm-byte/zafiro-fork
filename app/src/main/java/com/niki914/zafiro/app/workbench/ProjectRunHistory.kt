@@ -29,6 +29,10 @@ internal class ProjectRunHistory(context: Context) {
                     status = if (interrupted && status == ProjectRunStatus.Running) ProjectRunStatus.Interrupted else status,
                     output = (row.opt("output") as? String).orEmpty(),
                     exitCode = exitCode,
+                    checkCommand = row.opt("checkCommand") as? String,
+                    checkExitCode = (row.opt("checkExitCode") as? Number)?.toInt(),
+                    checkOutput = (row.opt("checkOutput") as? String).orEmpty(),
+                    checking = row.optBoolean("checking"),
                 ))
             }
         }
@@ -43,6 +47,10 @@ internal class ProjectRunHistory(context: Context) {
                 put("status", run.status.name)
                 put("output", run.output)
                 put("exitCode", run.exitCode ?: JSONObject.NULL)
+                put("checkCommand", run.checkCommand ?: JSONObject.NULL)
+                put("checkExitCode", run.checkExitCode ?: JSONObject.NULL)
+                put("checkOutput", run.checkOutput)
+                put("checking", run.checking)
             })
         }
         if (!prefs.edit().putString(path, rows.toString()).commit()) throw IOException("Project run history write failed")

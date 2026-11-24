@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.niki914.zafiro.app.ui.chat.composable.section.SectionList
 import com.niki914.zafiro.app.ui.chat.composable.section.WorkflowReportCard
+import com.niki914.zafiro.app.ui.chat.composable.section.ToolTimeline
 import com.niki914.zafiro.app.ui.chat.model.TurnSection
 import com.niki914.zafiro.app.ui.chat.model.TurnUiModel
 import com.niki914.zafiro.app.ui.chat.composable.action.TurnActionRow
@@ -67,6 +68,7 @@ internal fun TurnItem(
     onSwitchBranch: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
     isTurnActive: Boolean = false,
+    onStopExecution: (() -> Unit)? = null,
 ) {
     val alwaysVisible = actionsDisplay == MessageActionsDisplay.Always
 
@@ -140,6 +142,11 @@ internal fun TurnItem(
                     WorkflowReportCard(report = report, active = isTurnActive)
                     if (turn.sections.isNotEmpty()) AssistantSectionSpacing()
                 }
+                ToolTimeline(
+                    actions = turn.sections.filterIsInstance<TurnSection.ToolRun>().flatMap { it.actions },
+                    active = isTurnActive,
+                    onStop = onStopExecution,
+                )
                 SectionList(
                     sections = turn.sections,
                     onContentTap = {

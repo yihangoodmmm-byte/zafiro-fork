@@ -5,4 +5,14 @@
     <string name="ui_voice_read">朗读回复</string>
     <string name="ui_voice_read_stop">停止朗读</string>
     <string name="ui_voice_read_unavailable">无法朗读，请检查系统文字转语音设置。</string>
+    <string name="ui_voice_local_input">端侧语音输入</string>
+    <string name="ui_voice_local_unavailable">此设备没有可用的端侧语音识别服务。</string>
+    <string name="ui_voice_permission_denied">未授予麦克风权限。</string>
+    <string name="ui_voice_language_unavailable">当前语言的端侧识别模型不可用。</string>
+    <string name="ui_voice_no_match">没有识别到语音。</string>
+    <string name="ui_voice_local_failed">端侧语音识别失败。</string>
+    <string name="ui_voice_local_timeout">语音识别超时。</string>
+    <string name="ui_voice_listening">正在听…</string>
+    <string name="ui_voice_processing">正在识别…</string>
+    <string name="ui_voice_finish">完成</string>
 </resources>

@@ -5,6 +5,7 @@ import com.niki914.zafiro.api.model.ContextUsage
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
 import com.niki914.zafiro.api.model.Draft
+import com.niki914.zafiro.api.model.TurnId
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -95,6 +96,9 @@ interface Agent : AgentControl {
 
     /** UI task options apply only to this accepted turn; other entry points keep their defaults. */
     fun stream(options: ChatTurnOptions): TurnStart = stream()
+
+    /** Send a notification reply only if the addressed turn is still the latest one. */
+    fun replyTo(conversationId: ConversationId, turnId: TurnId, text: String): Boolean = false
 
     /**
      * 载入一条已持久化的会话。

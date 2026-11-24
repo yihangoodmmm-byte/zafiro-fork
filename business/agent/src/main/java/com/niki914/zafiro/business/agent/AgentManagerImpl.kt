@@ -64,6 +64,8 @@ class AgentManagerImpl(
 
     override val control: AgentControl get() = coordinator
 
+    override fun activeAgent(conversationId: String): Agent? = activeAgents[conversationId]
+
     override suspend fun switchTo(conversationId: String): Agent {
         val existing = activeAgents[conversationId]
         val target = if (existing != null) {

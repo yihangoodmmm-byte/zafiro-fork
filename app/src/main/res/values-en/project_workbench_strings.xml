@@ -128,4 +128,14 @@
     <string name="project_schedule_request_failed">Could not confirm the schedule update. Check its status before retrying.</string>
     <string name="project_schedule_earliest">Earliest eligible run: %1$s</string>
     <string name="project_local_preview_scripts">Run preview scripts</string>
+    <string name="project_power_title">Power event trigger</string>
+    <string name="project_power_connected">Power connected</string>
+    <string name="project_power_disconnected">Power disconnected</string>
+    <string name="project_power_enable">Enable event task</string>
+    <string name="project_power_confirm">Authorize running %2$s in this project after “%1$s”. Events are only received while the app process is alive. Android may delay execution.</string>
+    <string name="project_power_history">Event run history</string>
+    <string name="project_periodic_history">Periodic run history</string>
+    <string name="project_run_check_command">Verification command (optional)</string>
+    <string name="project_run_check_waiting">Waiting for the main command to succeed</string>
+    <string name="project_run_check_skipped">Verification skipped</string>
 </resources>
