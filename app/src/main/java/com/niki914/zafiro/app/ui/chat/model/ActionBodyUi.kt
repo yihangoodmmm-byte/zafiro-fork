@@ -1,5 +1,6 @@
 package com.niki914.zafiro.app.ui.chat.model
 
+import androidx.annotation.StringRes
 import com.niki914.zafiro.app.ui.model.home.HomeChatImage
 
 /**
@@ -42,6 +43,7 @@ sealed interface ActionBodyUi {
             val body: String?,
             val isMonospace: Boolean,
             val showCopyButton: Boolean,
+            @param:StringRes val bodyRes: Int? = null,
         ) : Custom
 
         /** 传输重试进行中（Retrying） */

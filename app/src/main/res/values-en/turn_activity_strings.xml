@@ -23,4 +23,19 @@
     <string name="tool_step_python_timeout">Python execution timed out</string>
     <string name="tool_step_mcp_response">MCP reported success; external state not independently checked</string>
     <string name="tool_timeline_waiting_result">Awaiting result</string>
+    <string name="chat_composer_model">Model: %1$s</string>
+    <string name="chat_composer_setup_model">Set up model</string>
+    <string name="chat_composer_working">Working…</string>
+    <string name="chat_composer_stopping">Stopping…</string>
+    <string name="chat_restore_failed_input">Restore to composer</string>
+    <string name="chat_restore_draft_occupied">Your current draft was not replaced.</string>
+    <string name="chat_error_auth_title">Model authentication failed</string>
+    <string name="chat_error_auth_body">Check the API key and endpoint in model settings.</string>
+    <string name="chat_error_connection_title">Could not connect to the model service</string>
+    <string name="chat_error_connection_body">Check your network connection and model endpoint.</string>
+    <string name="tool_timeline_highlight">%1$s: %2$s</string>
+    <string name="tool_timeline_stopped">Stopped</string>
+    <string name="tool_timeline_unconfirmed">Result unconfirmed</string>
+    <string name="tool_timeline_returned">Tool returned</string>
+    <string name="chat_composer_config_model">%1$s · %2$s</string>
 </resources>

@@ -54,6 +54,8 @@ internal class OkiaSessionAssembler(
     private val toolRegistry: ToolRegistry,
     private val imageLoader: AndroidImageLoader?,
     private val ensureImageSaver: suspend () -> ImageSaver?,
+    private val prepareContext: suspend (SerializationHolder) -> Unit = {},
+    private val contextCommitted: (SerializationHolder) -> Unit = {},
 ) {
     internal companion object {
         const val LOG_TAG = "niki914_zafiro_OkiaSessionAssembler"
@@ -187,8 +189,12 @@ internal class OkiaSessionAssembler(
             apiKey = config.apiKey
             model = config.model
             hooks += killToolResourcesHook
-            hooks += fixIncompleteToolCallsHook
             hooks += compactPruningHook
+            hooks += object : Hooks {
+                override suspend fun beforeSerialization(request: SerializationHolder) = prepareContext(request)
+                override suspend fun afterContextCommit(request: SerializationHolder) = contextCommitted(request)
+            }
+            hooks += fixIncompleteToolCallsHook
             idleTimeoutSeconds = config.idleTimeoutSeconds ?: AgentSessionEngine.NO_IDLE_TIMEOUT_SECONDS
             retryPolicy = RetryPolicy(maxAttempts = config.retryMaxAttempts)
             maxTokens = config.maxTokens

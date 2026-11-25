@@ -5,6 +5,7 @@ import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.DraftImage
 import com.niki914.zafiro.api.model.FileRef
 import com.niki914.zafiro.api.model.ToolInvocation
+import com.niki914.zafiro.api.model.TOOL_INTERRUPTED_REASON
 import com.niki914.zafiro.api.model.ToolOutcome
 import com.niki914.zafiro.api.model.TurnBlock
 import com.niki914.zafiro.api.model.TurnFailureCode
@@ -90,6 +91,7 @@ private fun ToolInvocation.toStatus(outcome: ToolOutcome?): HomeToolStatus {
             StepCheck.McpResponse
         } else StepCheck.fromResult(name, resultText),
         failedReason = failedReason,
+        isInterrupted = failedReason == TOOL_INTERRUPTED_REASON,
         displayNameRes = ToolPresentation.displayNameResOf(name),
         inputText = ToolPresentation.inputOf(name, argumentsJson),
         images = (outcome as? ToolOutcome.Succeeded)?.images.orEmpty().map { it.toHomeImage() },
@@ -109,6 +111,7 @@ private fun TurnFailureCode?.toLlmErrorCode(): LlmErrorCode? = when (this) {
     TurnFailureCode.Overloaded -> LlmErrorCode.Overloaded
     TurnFailureCode.Transport -> LlmErrorCode.Transport
     TurnFailureCode.Parse -> LlmErrorCode.Parse
+    TurnFailureCode.ContextOverflow -> LlmErrorCode.ContextOverflow
     TurnFailureCode.RetryExhausted -> LlmErrorCode.RetryExhausted
     TurnFailureCode.HookFailed -> LlmErrorCode.HookFailed
     TurnFailureCode.ToolExecutionFailed -> LlmErrorCode.ToolExecutionFailed

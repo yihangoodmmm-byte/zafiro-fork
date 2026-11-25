@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="catalog_diagnostic_empty">The service returned no models</string>
+    <string name="catalog_diagnostic_format">The response is not a recognized model catalogue</string>
+    <string name="catalog_adopt_models">Update model list</string>
+    <string name="catalog_fetch_models">Get available models</string>
+    <string name="catalog_custom_api">Custom model API</string>
+</resources>

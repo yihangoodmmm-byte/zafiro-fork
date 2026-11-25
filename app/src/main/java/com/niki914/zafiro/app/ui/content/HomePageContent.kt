@@ -41,6 +41,7 @@ import com.niki914.zafiro.app.ui.content.header.HomeConfigPopover
 import com.niki914.zafiro.app.ui.content.header.HomeTitleConfigChip
 import com.niki914.zafiro.app.ui.content.header.HomeTopBarContribution
 import com.niki914.zafiro.app.ui.model.home.FileAttachReason
+import com.niki914.zafiro.api.model.ContextCompaction
 import com.niki914.zafiro.app.ui.model.home.HomeChatEffect
 import com.niki914.zafiro.app.ui.model.home.HomeChatIntent
 import com.niki914.zafiro.app.ui.model.home.HomeChatViewModel
@@ -68,6 +69,7 @@ fun HomePageContent(
     onActiveConversationChanged: (String?) -> Unit,
     onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenModelSettings: () -> Unit = onOpenSettings,
     onOpenProject: () -> Unit = {},
     onOpenRuns: () -> Unit = {},
 ) {
@@ -116,6 +118,20 @@ fun HomePageContent(
                     attachToastContext, R.string.ui_home_task_options_save_failed, Toast.LENGTH_SHORT,
                 ).show()
 
+                HomeChatEffect.RestoreDraftOccupied -> Toast.makeText(
+                    attachToastContext, R.string.chat_restore_draft_occupied, Toast.LENGTH_LONG,
+                ).show()
+
+                is HomeChatEffect.ContextNotice -> {
+                    val message = when (effect.phase) {
+                        ContextCompaction.Phase.Compacted -> R.string.chat_context_done
+                        ContextCompaction.Phase.Pruned -> R.string.chat_context_pruned
+                        ContextCompaction.Phase.Failed -> R.string.chat_context_failed
+                        ContextCompaction.Phase.Cancelled -> R.string.chat_context_cancelled
+                        else -> R.string.chat_context_unchanged
+                    }
+                    Toast.makeText(attachToastContext, message, Toast.LENGTH_LONG).show()
+                }
                 HomeChatEffect.EmptyInputAttempted -> Toast.makeText(
                     attachToastContext,
                     R.string.ui_toast_empty_input,
@@ -241,8 +257,8 @@ fun HomePageContent(
         }
     }
 
-    LaunchedEffect(Unit) {
-        latestViewModel.sendIntent(HomeChatIntent.RefreshConfigs)
+    LaunchedEffect(isCurrentPage) {
+        if (isCurrentPage) latestViewModel.sendIntent(HomeChatIntent.RefreshConfigs)
     }
 
     DisposableEffect(Unit) {
@@ -353,8 +369,17 @@ fun HomePageContent(
             }
             viewModel.sendIntent(HomeChatIntent.Send)
         },
+        onCompactContext = { viewModel.sendIntent(HomeChatIntent.CompactContext) },
         onStopClick = {
             viewModel.sendIntent(HomeChatIntent.StopGenerating)
+        },
+        onModelClick = {
+            dismissInputFocus()
+            if (uiState.savedConfigs.isEmpty()) onOpenModelSettings()
+            else viewModel.sendIntent(HomeChatIntent.OpenConfigMenu)
+        },
+        onRestoreFailedInput = { turnId ->
+            viewModel.sendIntent(HomeChatIntent.RestoreFailedInput(turnId, uiState.currentConversationId))
         },
         pendingImages = uiState.pendingImages,
         pendingFiles = uiState.pendingFiles,

@@ -90,6 +90,7 @@ internal fun HomeChatTurn.toTurnUiModel(
                         subtitlePreview = if (!isCommand) inputPreview else null,
                         isRunning = isRunning,
                         isFailed = block.status.state == HomeToolState.Failed,
+                        isInterrupted = block.status.isInterrupted,
                         isExpanded = isExpanded,
                         isUserToggled = isUserToggled,
                         isThinking = false,
@@ -184,6 +185,7 @@ internal fun HomeChatTurn.toTurnUiModel(
                             body = ActionBodyUi.Custom.ErrorDetail(
                                 title = "",
                                 body = formattedBody,
+                                bodyRes = errorUi.bodyRes,
                                 isMonospace = isMonospace,
                                 showCopyButton = !formattedBody.isNullOrBlank(),
                             ),

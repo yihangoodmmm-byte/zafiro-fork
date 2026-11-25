@@ -20,12 +20,13 @@ internal fun ErrorDetailBody(
     ui: ActionBodyUi.Custom.ErrorDetail,
     modifier: Modifier = Modifier,
 ) {
-    if (ui.body.isNullOrEmpty()) return
+    val text = ui.bodyRes?.let { stringResource(it) } ?: ui.body.orEmpty()
+    if (text.isEmpty()) return
 
     Box(modifier = modifier.fillMaxWidth()) {
         SelectionContainer {
             ToolResultText(
-                text = ui.body,
+                text = text,
                 style = if (ui.isMonospace) {
                     MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
                 } else {

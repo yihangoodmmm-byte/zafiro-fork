@@ -1,0 +1,22 @@
+<resources>
+    <string name="chat_context_title">Context</string>
+    <string name="chat_context_unknown">No estimate yet</string>
+    <string name="chat_context_usage">Estimated %1$d / %2$d tokens</string>
+    <string name="chat_context_reply">Reply reserve: %1$d tokens</string>
+    <string name="chat_context_compact">Compact now</string>
+    <string name="chat_context_window">Model window: %1$d tokens</string>
+    <string name="chat_context_source_user">Window source: manual</string>
+    <string name="chat_context_source_provider">Window source: provider catalog</string>
+    <string name="chat_context_source_catalog">Window source: OpenRouter</string>
+    <string name="chat_context_source_default">Window source: default estimate</string>
+    <string name="chat_context_overflow">Context window exceeded</string>
+    <string name="chat_context_overflow_help">Shorten your message, remove attachments, or switch to a model with a larger context window.</string>
+    <string name="chat_context_running">Compacting context…</string>
+    <string name="chat_context_done">Context compacted; original messages remain available</string>
+    <string name="chat_context_pruned">Shortened older tool results for this request</string>
+    <string name="chat_context_unchanged">No safe history to compact, or summary did not reduce context</string>
+    <string name="chat_context_failed">Compaction failed; original context is unchanged</string>
+    <string name="chat_context_cancelled">Compaction cancelled</string>
+    <string name="chat_context_reduction">Approx. %1$d → %2$d tokens</string>
+    <string name="chat_context_estimate_note">Local estimate; images use a budget allowance. Actual usage depends on the provider.</string>
+</resources>

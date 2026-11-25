@@ -59,6 +59,10 @@ object ContextPruner {
             return PruneResult(messages = history, hasCompacted = false, prunedCount = 0)
         }
 
+        summaryPayload.coveredMessages?.takeIf { it <= summaryIdx }?.let { covered ->
+            val tail = history.subList(covered, summaryIdx).filterNot(::isCheckpoint)
+            return PruneResult(listOf(history[summaryIdx]) + tail + history.drop(summaryIdx + 1), true, covered)
+        }
         val keepTurns = summaryPayload.keepTurns
         var keepStartIndex = summaryIdx
 
@@ -97,6 +101,10 @@ object ContextPruner {
             prunedCount = keepStartIndex,
         )
     }
+
+    internal fun isCheckpoint(message: Message): Boolean = payloadOf(message) != null
+
+    internal fun payloadOf(message: Message) = (message as? Message.User)?.let(::summaryPayloadOf)
 
     private fun summaryPayloadOf(message: Message.User): SummaryBlock.Payload? {
         val text = message.content.filterIsInstance<ContentBlock.Text>().joinToString("\n") { it.text }

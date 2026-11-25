@@ -12,6 +12,9 @@ package com.niki914.zafiro.api.model
 data class ContextUsage(
     val usedTokens: Long,
     val windowTokens: Long,
+    val replyTokens: Int? = null,
+    val configId: String? = null,
+    val windowSource: String? = null,
 ) {
     /**
      * 占用比率，恒在 `0f..1f`。

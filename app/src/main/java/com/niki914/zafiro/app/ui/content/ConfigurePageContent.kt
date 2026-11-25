@@ -43,7 +43,7 @@ fun ConfigurePageContent(
     onCancelEndpointMismatch: () -> Unit = {},
     onShowModelCatalogSheet: () -> Unit = {},
     onHideModelCatalogSheet: () -> Unit = {},
-    onSelectCatalogModel: (String) -> Unit = {},
+    onSelectCatalogModel: (List<String>) -> Unit = {},
     requestedFocusField: ConfigureEditableField? = null,
     onRequestedFocusHandled: () -> Unit = {},
 ) {
@@ -114,6 +114,7 @@ fun ConfigurePageContent(
         visible = uiState.showModelCatalogSheet,
         catalog = uiState.modelCatalog,
         currentModelInput = uiState.modelInput,
+        status = uiState.modelCatalogStatus,
         onDismissRequest = onHideModelCatalogSheet,
         onSelect = onSelectCatalogModel,
     )

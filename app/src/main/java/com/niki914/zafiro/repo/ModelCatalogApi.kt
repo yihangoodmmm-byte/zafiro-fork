@@ -5,16 +5,18 @@ import com.niki914.zafiro.settings.model.LlmProtocol
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import okhttp3.Request
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+
+internal class ModelCatalogFormatException : IOException("Unrecognized model catalogue response")
 
 internal class ModelCatalogHttpException(val status: Int) : IOException("Model catalogue HTTP $status")
 
@@ -60,11 +62,18 @@ internal object ModelCatalogApi {
         val client = SharedHttp.client.newBuilder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
+            .callTimeout(20, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw ModelCatalogHttpException(response.code)
             val body = response.body?.string().orEmpty()
             Logger.i(LOG_TAG, "Model catalogue received (${body.length} characters)")
+            val root = runCatching { json.parseToJsonElement(body) as? JsonObject }.getOrNull()
+            if (root?.get("data") !is JsonArray) {
+                throw ModelCatalogFormatException()
+            }
             parseCatalog(body)
         }
     }
@@ -78,12 +87,12 @@ internal object ModelCatalogApi {
                 ?.mapNotNull { it as? JsonObject }
                 .orEmpty()
             val ids = dataEntries.mapNotNull { entry ->
-                entry["id"]?.jsonPrimitive?.contentOrNull
+                (entry["id"] as? JsonPrimitive)?.contentOrNull
                     ?.trim()
                     ?.takeIf(String::isNotBlank)
             }.distinct().sorted()
             val facts = dataEntries.mapNotNull { entry ->
-                val id = entry["id"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                val id = (entry["id"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
                 if (id.isEmpty()) return@mapNotNull null
                 factsOf(entry)?.let { id to it }
             }.toMap()
@@ -120,7 +129,7 @@ internal object ModelCatalogApi {
                 ?.jsonArray
                 ?.mapNotNull { element -> element as? JsonObject }
                 ?.mapNotNull { entry ->
-                    val id = entry["id"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                    val id = (entry["id"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
                     if (id.isEmpty()) return@mapNotNull null
                     factsOf(entry)?.let { id to it }
                 }

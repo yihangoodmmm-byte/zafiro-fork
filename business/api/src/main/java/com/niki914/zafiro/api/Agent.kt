@@ -2,6 +2,7 @@ package com.niki914.zafiro.api
 
 import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.ContextUsage
+import com.niki914.zafiro.api.model.ContextCompaction
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationId
 import com.niki914.zafiro.api.model.Draft
@@ -49,6 +50,8 @@ interface Agent : AgentControl {
      */
     val contextUsage: StateFlow<ContextUsage?>
 
+    val contextCompaction: StateFlow<ContextCompaction> get() = ContextCompaction.idle
+
     /**
      * 用户输入草稿：一段文本 + N 张图。多客户端共享同一份。
      *
@@ -92,6 +95,8 @@ interface Agent : AgentControl {
      * @return 命令是否被接受。[TurnStart.Busy] 时实现不在状态里留痕；
      *   失败卡只承载引擎层错误。
      */
+    fun compactContext(): TurnStart = TurnStart.DraftEmpty
+
     fun stream(): TurnStart
 
     /** UI task options apply only to this accepted turn; other entry points keep their defaults. */

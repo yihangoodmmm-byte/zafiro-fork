@@ -15,7 +15,6 @@ internal fun toAssistantErrorUi(
     attempts: Int? = null,
 ): AssistantErrorUi {
     return when (code) {
-        // 配置问题：用户可行动的引导（唯一本地化正文）
         LlmErrorCode.ConfigRequired -> AssistantErrorUi(
             titleRes = R.string.ui_home_error_config_required_title,
             bodyRes = R.string.ui_home_error_config_required_body,
@@ -32,8 +31,23 @@ internal fun toAssistantErrorUi(
             body = message?.trim()?.ifEmpty { null },
         )
 
-        LlmErrorCode.Auth, LlmErrorCode.Quota, LlmErrorCode.RateLimit,
-        LlmErrorCode.Overloaded, LlmErrorCode.Transport, LlmErrorCode.Parse,
+        LlmErrorCode.ContextOverflow -> AssistantErrorUi(
+            titleRes = R.string.chat_context_overflow,
+            bodyRes = R.string.chat_context_overflow_help,
+        )
+
+        LlmErrorCode.Auth -> AssistantErrorUi(
+            titleRes = R.string.chat_error_auth_title,
+            bodyRes = R.string.chat_error_auth_body,
+        )
+
+        LlmErrorCode.Transport -> AssistantErrorUi(
+            titleRes = R.string.chat_error_connection_title,
+            bodyRes = R.string.chat_error_connection_body,
+        )
+
+        LlmErrorCode.Quota, LlmErrorCode.RateLimit,
+        LlmErrorCode.Overloaded, LlmErrorCode.Parse,
         LlmErrorCode.RetryExhausted,
             -> AssistantErrorUi(
             titleRes = R.string.ui_home_error_network_title,

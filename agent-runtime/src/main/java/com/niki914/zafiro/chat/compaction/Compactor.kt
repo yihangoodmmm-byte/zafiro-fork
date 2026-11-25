@@ -144,63 +144,66 @@ class Compactor(
         force: Boolean = false,
         contextTokens: Long = 0L,
         contextWindow: Long = 0L,
+        replyTokens: Int = 4096,
     ): Boolean {
-        val entries = session.conversation.value.history
-        if (entries.isEmpty()) return false
-        val history = entries.map { it.message }
-
-        val userTurnsCount = history.count { msg ->
-            msg is Message.User && SummaryBlock.strip(textOf(msg)).payload == null
-        }
-
-        val isThresholdTriggered = shouldCompact(contextTokens, contextWindow, thresholdRatio)
-
-        if (!force && !isThresholdTriggered) {
-            return false
-        }
-
-        Logger.i(
-            LOG_TAG,
-            "starting compaction: force=$force threshold=$isThresholdTriggered " +
-                    "historySize=${history.size} userTurns=$userTurnsCount"
-        )
-
-        // 提取旧摘要（若存在）
-        val previousSummary = history.mapNotNull { msg ->
-            if (msg is Message.User) SummaryBlock.strip(textOf(msg)).payload?.summary else null
-        }.lastOrNull()
-
-        // 展平对话
-        val conversationText = serializeConversation(history)
-        if (conversationText.isBlank()) return false
-
-        // 构建提示词
-        val userPrompt = CompactorPrompts.buildSummarizationUserPrompt(conversationText, previousSummary)
-        val systemPrompt = CompactorPrompts.SUMMARIZATION_SYSTEM_PROMPT
-
-        val summaryResult = runCatchingCancellable {
-            summaryGenerator.generate(systemPrompt, userPrompt)
-        }.getOrElse { e ->
-            Logger.w(LOG_TAG, "compaction failed gracefully due to error, skipping", e)
-            return false
-        }
-
-        if (summaryResult.isBlank()) {
-            Logger.w(LOG_TAG, "compaction generator returned empty summary, aborting")
-            return false
-        }
-
-        // 确保协程仍然存活
+        if (!force && !shouldCompact(contextTokens, contextWindow, thresholdRatio)) return false
+        val history = session.conversation.value.history.map { it.message }
+        val checkpoint = prepare(history, contextWindow, replyTokens) ?: return false
         currentCoroutineContext().ensureActive()
-
-        // 组装 SummaryBlock 节点并挂入树
-        val payload = SummaryBlock.Payload(keepTurns = keepTurns, summary = summaryResult.trim())
-        val blockText = SummaryBlock.block(payload)
-        val checkpointMessage = Message.User(listOf(ContentBlock.Text(blockText)))
-
-        session.append(checkpointMessage)
-        Logger.i(LOG_TAG, "compaction committed successfully with keepTurns=$keepTurns")
+        session.append(checkpoint)
         return true
+    }
+
+    internal suspend fun prepare(
+        history: List<Message>,
+        window: Long,
+        replyTokens: Int,
+        generate: suspend (String, String) -> String = summaryGenerator::generate,
+    ): Message.User? {
+        val projected = ContextPruner.prune(history).messages
+        val previous = projected.firstOrNull()?.let(ContextPruner::payloadOf)
+        val visible = projected.filterNot(ContextPruner::isCheckpoint)
+        val raw = history.withIndex().filterNot { ContextPruner.isCheckpoint(it.value) }
+        val firstVisible = raw.size - visible.size
+        if (firstVisible < 0 || visible.size < 2) return null
+        val users = visible.indices.filter { visible[it] is Message.User }
+        val protectedFrom = users.getOrNull((users.size - keepTurns.coerceAtLeast(1)).coerceAtLeast(0)) ?: return null
+        val system = CompactorPrompts.SUMMARIZATION_SYSTEM_PROMPT
+        val inputBudget = (window - replyTokens.coerceAtLeast(0) - 512).coerceAtMost(64_000)
+        if (inputBudget <= 0) return null
+        var selected = 0
+        var estimated = RequestContextBudget.text(previous?.summary) + 512
+        val unresolved = mutableSetOf<String>()
+        for (index in 0 until protectedFrom) {
+            val message = visible[index]
+            if (message is Message.User && message.content.any { it is ContentBlock.Image } ||
+                message is Message.ToolResult && (message.outcome as? ToolCallOutcome.Success)?.images?.isNotEmpty() == true
+            ) break
+            if (message is Message.Assistant) {
+                message.message.content.filterIsInstance<ContentBlock.ToolCall>().forEach { unresolved += it.id }
+            }
+            if (message is Message.ToolResult) unresolved -= message.callId
+            estimated += RequestContextBudget.text(serializeConversation(listOf(message))) + 8
+            if (estimated > inputBudget) break
+            if (unresolved.isEmpty() && visible[index + 1] !is Message.ToolResult) selected = index + 1
+        }
+        if (selected == 0) return null
+        val old = serializeConversation(visible.take(selected))
+        if (old.isBlank()) return null
+        val prompt = CompactorPrompts.buildSummarizationUserPrompt(old, previous?.summary)
+        if (RequestContextBudget.text(prompt) + RequestContextBudget.text(system) + 32 > inputBudget) return null
+        val summary = runCatchingCancellable { generate(system, prompt).trim() }.getOrElse {
+            Logger.w(LOG_TAG, "summary request failed", it)
+            return null
+        }
+        if (summary.isBlank()) return null
+        val covered = raw[firstVisible + selected - 1].index + 1
+        val before = projected.sumOf(RequestContextBudget::message)
+        fun checkpoint(after: Long? = null) = Message.User(listOf(ContentBlock.Text(SummaryBlock.block(
+            SummaryBlock.Payload(keepTurns, summary, covered, before, after),
+        ))))
+        val after = ContextPruner.prune(history + checkpoint()).messages.sumOf(RequestContextBudget::message)
+        return checkpoint(after).takeIf { after + 32 < before }
     }
 
     private fun textOf(user: Message.User): String =

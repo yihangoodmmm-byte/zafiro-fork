@@ -23,4 +23,19 @@
     <string name="tool_step_python_timeout">Python 执行超时</string>
     <string name="tool_step_mcp_response">远端返回成功，未独立核对外部状态</string>
     <string name="tool_timeline_waiting_result">等待结果</string>
+    <string name="chat_composer_model">模型：%1$s</string>
+    <string name="chat_composer_setup_model">配置模型</string>
+    <string name="chat_composer_working">正在处理…</string>
+    <string name="chat_composer_stopping">正在停止…</string>
+    <string name="chat_restore_failed_input">恢复到输入框</string>
+    <string name="chat_restore_draft_occupied">输入框已有草稿，未覆盖。</string>
+    <string name="chat_error_auth_title">模型鉴权失败</string>
+    <string name="chat_error_auth_body">请检查模型配置中的 API 密钥和服务地址。</string>
+    <string name="chat_error_connection_title">无法连接模型服务</string>
+    <string name="chat_error_connection_body">请检查网络连接和模型服务地址。</string>
+    <string name="tool_timeline_highlight">%1$s：%2$s</string>
+    <string name="tool_timeline_stopped">已停止</string>
+    <string name="tool_timeline_unconfirmed">结果未确认</string>
+    <string name="tool_timeline_returned">工具已返回</string>
+    <string name="chat_composer_config_model">%1$s · %2$s</string>
 </resources>

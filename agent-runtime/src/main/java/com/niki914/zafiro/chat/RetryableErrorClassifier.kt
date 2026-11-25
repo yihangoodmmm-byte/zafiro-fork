@@ -44,7 +44,7 @@ object RetryableErrorClassifier {
         LLMErrorCode.Quota -> LlmErrorCode.Quota
         LLMErrorCode.RateLimit -> LlmErrorCode.RateLimit
         LLMErrorCode.Overloaded -> LlmErrorCode.Overloaded
-        LLMErrorCode.ContextOverflow -> LlmErrorCode.Parse
+        LLMErrorCode.ContextOverflow -> LlmErrorCode.ContextOverflow
         LLMErrorCode.Parse -> LlmErrorCode.Parse
         LLMErrorCode.HookFailed -> LlmErrorCode.HookFailed
         LLMErrorCode.ToolExecutionFailed -> LlmErrorCode.ToolExecutionFailed

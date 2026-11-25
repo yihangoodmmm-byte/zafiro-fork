@@ -1,6 +1,9 @@
 package com.niki914.zafiro.app.ui.route
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.niki914.zafiro.app.R
+import com.niki914.zafiro.app.ui.model.CustomApiSpec
 import com.niki914.zafiro.app.ui.content.SelectionOption
 import com.niki914.zafiro.app.ui.content.SelectionPageContent
 import com.niki914.zafiro.app.ui.model.ProviderSpecs
@@ -13,10 +16,11 @@ internal fun SettingsProviderPickPageRoute(
 ) {
     SelectionPageContent(
         options = ProviderSpecs.all.map { spec ->
+            val label = if (spec == CustomApiSpec) stringResource(R.string.catalog_custom_api) else spec.brandName
             val colors = providerButtonColorsOrNull(spec)
             SelectionOption(
                 id = spec.id,
-                title = spec.brandName,
+                title = label,
                 leadingIconRes = spec.iconRes,
                 tintLeadingIcon = spec.tintIcon,
                 darkContainerColor = colors?.darkContainerColor,
@@ -29,7 +33,7 @@ internal fun SettingsProviderPickPageRoute(
                     onPush(
                         SavedConfigDetailPage(
                             configId = null,
-                            configName = spec.brandName,
+                            configName = label,
                             providerId = spec.id,
                         ),
                     )

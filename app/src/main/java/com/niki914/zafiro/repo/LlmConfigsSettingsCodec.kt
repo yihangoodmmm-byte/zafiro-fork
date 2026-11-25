@@ -39,6 +39,7 @@ data class SavedLlmConfig(
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
     val isRole: Boolean = false,
+    val providerGroupId: String = "",
 )
 
 /**
@@ -99,6 +100,7 @@ internal object LlmConfigsSettingsCodec {
             createdAt = obj.long(CREATED_AT_KEY, 0L),
             updatedAt = obj.long(UPDATED_AT_KEY, 0L),
             isRole = obj.boolean(IS_ROLE_KEY),
+            providerGroupId = obj.string("provider_group_id"),
         )
     }
 
@@ -121,6 +123,7 @@ internal object LlmConfigsSettingsCodec {
                 CREATED_AT_KEY to JsonPrimitive(config.createdAt),
                 UPDATED_AT_KEY to JsonPrimitive(config.updatedAt),
                 IS_ROLE_KEY to JsonPrimitive(config.isRole),
+                "provider_group_id" to JsonPrimitive(config.providerGroupId),
             )
         )
     }

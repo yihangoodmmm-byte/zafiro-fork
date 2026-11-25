@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import com.niki914.uikit.infra.component.OptionSheet
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,6 +59,7 @@ import com.niki914.uikit.infra.liquidScreenTopPadding
 import com.niki914.uikit.infra.scrollbar.LiquidOverscrollContainer
 import com.niki914.uikit.infra.scrollbar.LiquidOverscrollController
 import com.niki914.uikit.infra.scrollbar.rememberLiquidOverscrollController
+import com.niki914.zafiro.api.model.ContextCompaction
 import com.niki914.zafiro.api.model.ChatReasoningEffort
 import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.api.util.tryIgnore
@@ -91,7 +93,7 @@ private const val ATTACH_LOG_TAG = "niki914_zafiro_Attach"
 /** 图片多选的张数上限。远低于系统的 getPickImagesMaxLimit()，取一个够用且不炸上下文的数。 */
 private const val PHOTO_PICK_MAX_ITEMS = 10
 
-private enum class ComposerPanel { Attachments, Workspace, TaskOptions, ReasoningEffort }
+private enum class ComposerPanel { Attachments, Workspace, TaskOptions, ReasoningEffort, Context }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -109,7 +111,10 @@ internal fun HomePageContentBody(
     onContentTap: () -> Unit,
     onInputChange: (String) -> Unit,
     onSendClick: () -> Unit,
+    onCompactContext: () -> Unit = {},
     onStopClick: () -> Unit,
+    onModelClick: () -> Unit = {},
+    onRestoreFailedInput: (Long) -> Unit = {},
     pendingImages: List<HomeChatImage>,
     pendingFiles: List<HomeChatFile>,
     onImageAttached: (String) -> Unit,
@@ -300,7 +305,7 @@ internal fun HomePageContentBody(
                             onFork = onFork,
                             onRewind = onRewind,
                             isReadingAloud = readoutTurn == turn.id,
-                            onStopExecution = onStopClick,
+                            onRestoreFailedInput = { onRestoreFailedInput(turn.id) },
                             onReadAloud = if (!canRead) null else {
                                 {
                                     if (readoutTurn == turn.id) {
@@ -368,7 +373,14 @@ internal fun HomePageContentBody(
                 onSendClick = onSendClick,
                 onStopClick = onStopClick,
                 isGenerating = uiState.isGenerating,
+                isStopping = uiState.isStopping,
+                modelLabel = uiState.displayConfig?.let { config ->
+                    if (config.modelId.isBlank() || config.modelId == config.name) config.name
+                    else stringResource(R.string.chat_composer_config_model, config.name, config.modelId)
+                },
+                onModelClick = onModelClick,
                 contextProgress = uiState.contextProgress,
+                onContextClick = { openPanel(ComposerPanel.Context) },
                 pendingImages = pendingImages,
                 pendingFiles = pendingFiles,
                 onAttachImageClick = { openPanel(ComposerPanel.Attachments) },
@@ -383,12 +395,13 @@ internal fun HomePageContentBody(
                 reasoningEffortShortLabel = uiState.turnOptions.reasoningEffort?.let { homeReasoningEffortLabel(it) },
                 onReasoningEffortClick = { openPanel(ComposerPanel.ReasoningEffort) },
                 backdrop = chatBackdrop,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                inputModifier = Modifier
                     .onFocusChanged { focusState ->
                         onComposerFocusChanged(focusState.hasFocus)
                     }
-                    .focusRequester(composerFocusRequester)
+                    .focusRequester(composerFocusRequester),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .padding(
                         start = 20.dp,
                         end = 20.dp,
@@ -500,6 +513,54 @@ internal fun HomePageContentBody(
                 onWorkspaceSelected(workspaceDraft)
             },
         )
+        OptionSheet(
+            visible = panel == ComposerPanel.Context,
+            onDismissRequest = { panel = null },
+            title = stringResource(R.string.chat_context_title),
+        ) { _ ->
+            val model = uiState.displayConfig
+            val usage = uiState.contextUsage?.takeIf { it.configId.isNullOrBlank() || it.configId == model?.id }
+            Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
+                model?.modelId?.takeIf { it.isNotBlank() }?.let { Text(it) }
+                Text(when {
+                    usage != null -> stringResource(R.string.chat_context_usage, usage.usedTokens, usage.windowTokens)
+                    model?.declaredWindow != null -> stringResource(R.string.chat_context_window, model.declaredWindow)
+                    else -> stringResource(R.string.chat_context_unknown)
+                })
+                val source = usage?.windowSource ?: if (model?.declaredWindow != null) "user" else null
+                val sourceLabel = when (source) {
+                    "user" -> R.string.chat_context_source_user
+                    "provider" -> R.string.chat_context_source_provider
+                    "openrouter" -> R.string.chat_context_source_catalog
+                    "default" -> R.string.chat_context_source_default
+                    else -> null
+                }
+                sourceLabel?.let { Text(stringResource(it)) }
+                (usage?.replyTokens?.toLong() ?: model?.declaredReply)?.let {
+                    Text(stringResource(R.string.chat_context_reply, it))
+                }
+                val maintenance = uiState.contextCompaction
+                val phaseLabel = when (maintenance.phase) {
+                    ContextCompaction.Phase.Idle -> null
+                    ContextCompaction.Phase.Running -> R.string.chat_context_running
+                    ContextCompaction.Phase.Compacted -> R.string.chat_context_done
+                    ContextCompaction.Phase.Pruned -> R.string.chat_context_pruned
+                    ContextCompaction.Phase.Unchanged -> R.string.chat_context_unchanged
+                    ContextCompaction.Phase.Failed -> R.string.chat_context_failed
+                    ContextCompaction.Phase.Cancelled -> R.string.chat_context_cancelled
+                }
+                phaseLabel?.let { Text(stringResource(it)) }
+                val before = maintenance.beforeTokens
+                val after = maintenance.afterTokens
+                if (before != null && after != null) Text(stringResource(R.string.chat_context_reduction, before, after))
+                Text(stringResource(R.string.chat_context_estimate_note))
+                TextButton(
+                    enabled = !uiState.isGenerating && !uiState.isStopping && !uiState.isLoadingConversation &&
+                        maintenance.phase != ContextCompaction.Phase.Running,
+                    onClick = { panel = null; onCompactContext() },
+                ) { Text(stringResource(R.string.chat_context_compact)) }
+            }
+        }
         HomeTaskOptionsSheet(
             visible = panel == ComposerPanel.TaskOptions,
             onDismissRequest = { panel = null },

@@ -3,7 +3,9 @@ package com.niki914.zafiro.app.ui.route
 import androidx.compose.runtime.Composable
 import com.niki914.zafiro.app.ui.content.HomePageContent
 import com.niki914.zafiro.app.ui.nav.ConversationHistoryPage
+import com.niki914.zafiro.app.ui.nav.SettingsDetailPage
 import com.niki914.zafiro.app.ui.nav.SettingsHomePage
+import com.niki914.zafiro.app.ui.nav.ZafiroSettingsGroup
 import com.niki914.zafiro.app.ui.nav.ProjectWorkbenchPage
 import com.niki914.zafiro.app.ui.nav.ProjectRunsPage
 import com.niki914.zafiro.app.ui.nav.ZafiroPage
@@ -27,6 +29,7 @@ internal fun HomePageRoute(
         },
         onOpenProject = { onPush(ProjectWorkbenchPage) },
         onOpenRuns = { onPush(ProjectRunsPage) },
+        onOpenModelSettings = { onPush(SettingsDetailPage(ZafiroSettingsGroup.ModelConfig)) },
         onOpenSettings = {
             onPush(SettingsHomePage)
         },

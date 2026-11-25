@@ -4,6 +4,8 @@ import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
 import com.niki914.zafiro.api.model.ChatReasoningEffort
 import com.niki914.zafiro.api.model.ChatTurnOptions
+import com.niki914.zafiro.api.model.ContextUsage
+import com.niki914.zafiro.api.model.ContextCompaction
 import com.niki914.zafiro.app.conversation.ConversationRecord
 import com.niki914.zafiro.app.conversation.ConversationSummary
 import com.niki914.zafiro.app.conversation.ForkKind
@@ -72,6 +74,7 @@ data class HomeToolStatus(
     val images: List<HomeChatImage> = emptyList(),
     val workflowReport: WorkflowPlanReport? = null,
     val stepCheck: StepCheck? = null,
+    val isInterrupted: Boolean = false,
 )
 
 sealed interface HomeChatBlock {
@@ -142,6 +145,7 @@ data class HomeChatUiState(
     val pendingFiles: List<HomeChatFile> = emptyList(),
     val turns: List<HomeChatTurn> = emptyList(),
     val isGenerating: Boolean = false,
+    val isStopping: Boolean = false,
     val isLoadingConversation: Boolean = false,
     /** 内容发射版本，用于 Compose 贴底触发；不携带事件类型。 */
     val conversationVersion: Int = 0,
@@ -170,6 +174,8 @@ data class HomeChatUiState(
      * 或模型未上报 usage），此时不画环。
      */
     val contextProgress: Float? = null,
+    val contextUsage: ContextUsage? = null,
+    val contextCompaction: ContextCompaction = ContextCompaction(),
     val turnOptions: ChatTurnOptions = ChatTurnOptions(),
     val isResolvingWorkspace: Boolean = false,
 ) {
@@ -198,12 +204,17 @@ fun HomeChatUiState.withClearedTransient() = copy(
     expandedActionSource = null,
     activeThinkingKey = null,
     isConfigMenuVisible = false,
+    contextProgress = null,
+    contextUsage = null,
+    contextCompaction = ContextCompaction(),
 )
 
 sealed interface HomeChatIntent {
     data class InputChanged(val value: String) : HomeChatIntent
     data class AppendProjectReference(val value: String) : HomeChatIntent
+    data object CompactContext : HomeChatIntent
     data object Send : HomeChatIntent
+    data class RestoreFailedInput(val turnId: Long, val conversationId: String?) : HomeChatIntent
     data object Warmup : HomeChatIntent
 
     /** 相册选图完成：追加一个待落盘项，实现侧完成后从 draft 读回。失败时该项消失。 */
@@ -262,6 +273,8 @@ sealed interface HomeChatEffect {
     data object WorkspaceBusy : HomeChatEffect
     data object TurnOptionsSaveFailed : HomeChatEffect
     data object EmptyInputAttempted : HomeChatEffect
+    data object RestoreDraftOccupied : HomeChatEffect
+    data class ContextNotice(val phase: ContextCompaction.Phase) : HomeChatEffect
 }
 
 /**

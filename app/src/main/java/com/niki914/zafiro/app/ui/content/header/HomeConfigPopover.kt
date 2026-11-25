@@ -36,10 +36,10 @@ internal fun HomeConfigPopover(
     ) {
         configs.forEach { config ->
             LiquidMenuItem(
-                title = config.name,
+                title = if (config.isRole) config.name else config.modelId.ifBlank { config.name },
                 trailingText = if (config.isRole) {
                     stringResource(R.string.chat_role_model, config.modelId)
-                } else config.modelId.takeIf { it != config.name },
+                } else config.name.takeIf { it != config.modelId },
                 enabled = !uiState.isGenerating && !uiState.isLoadingConversation,
                 checked = config.id == uiState.activeConfigId,
                 onClick = { onSelectConfig(config.id) },

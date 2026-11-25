@@ -216,6 +216,7 @@ object ConversationFormatter {
         // 历史里的 token 记账（与流式路径同源）：取最后一条带记账的助手响应
         var contextTokens: Long? = null
 
+        var activeTurnIndex = -1
         history.forEach { entry ->
             when (val message = entry.message) {
                 is Message.User -> {
@@ -232,6 +233,7 @@ object ConversationFormatter {
                         )
                     } else {
                         val stripped = FilesBlock.strip(rawText)
+                        activeTurnIndex = turns.size
                         turns += ConversationTurn(
                             id = turnIdAt(turns.size),
                             userText = stripped.text,
@@ -245,7 +247,7 @@ object ConversationFormatter {
 
                 is Message.Assistant -> {
                     message.message.usage?.contextTokens?.let { contextTokens = it }
-                    val target = turns.lastOrNull()
+                    val target = turns.getOrNull(activeTurnIndex)
                     if (target == null) {
                         // 没有前置用户消息的助手条目（异常快照）：丢弃，不造空回合
                         Logger.w(
@@ -253,14 +255,14 @@ object ConversationFormatter {
                             "assistant entry skipped entryId=${entry.id} reason=noUserTurn",
                         )
                     } else {
-                        turns[turns.lastIndex] =
-                            target.appendAssistantContent(message.message, turns.lastIndex)
+                        turns[activeTurnIndex] =
+                            target.appendAssistantContent(message.message, activeTurnIndex)
                     }
                 }
 
                 is Message.ToolResult -> {
-                    val target = turns.lastOrNull() ?: return@forEach
-                    turns[turns.lastIndex] = target.applyToolOutcome(message)
+                    val target = turns.getOrNull(activeTurnIndex) ?: return@forEach
+                    turns[activeTurnIndex] = target.applyToolOutcome(message)
                 }
             }
         }

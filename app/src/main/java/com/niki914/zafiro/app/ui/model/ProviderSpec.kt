@@ -41,6 +41,7 @@ object ProviderSpecs {
     val default: ProviderSpec = DeepSeekSpec
 
     val all: List<ProviderSpec> = listOf(
+        CustomApiSpec,
         AnthropicSpec,
         OpenAiSpec,
         OpenRouterSpec,
@@ -57,6 +58,18 @@ object ProviderSpecs {
     fun find(providerId: String?): ProviderSpec {
         return all.firstOrNull { it.id == providerId } ?: default
     }
+}
+
+internal data object CustomApiSpec : ProviderSpec {
+    override val id = "custom-api"
+    override val brandName = "Custom API"
+    override val officialEndpoint = ""
+    override val exampleModelId = "your-model-id"
+    override val allowsCustomEndpointInNewConfig = true
+    override val defaultProtocol = "openai-chat-completions"
+    override val iconRes = R.drawable.openrouter
+    override val tintIcon = true
+    override val visualTokens = ProviderVisualTokens(ProviderButtonTokens())
 }
 
 private data object VolcengineCodingPlanSpec : ProviderSpec {

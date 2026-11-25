@@ -8,12 +8,15 @@ import com.niki914.zafiro.api.Agent
 import com.niki914.zafiro.api.AgentManager
 import com.niki914.zafiro.api.Approver
 import com.niki914.zafiro.api.TurnStart
+import com.niki914.zafiro.api.model.AgentState
 import com.niki914.zafiro.api.model.ApprovalDecision
 import com.niki914.zafiro.api.model.ApprovalRequest
 import com.niki914.zafiro.api.model.ChatTurnOptions
+import com.niki914.zafiro.api.model.ContextCompaction
 import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.DraftImage
 import com.niki914.zafiro.api.model.FileRef
+import com.niki914.zafiro.api.model.TurnBlock
 import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.api.model.isRunning
 import com.niki914.zafiro.app.conversation.ConversationBranchTree
@@ -131,6 +134,12 @@ class HomeChatViewModel internal constructor(
                 onInputChanged(draft + (if (draft.isBlank() || draft.endsWith("\n")) "" else "\n") + intent.value)
             }
             HomeChatIntent.Send -> sendCurrentInput()
+            HomeChatIntent.CompactContext -> {
+                if (currentState.isLoadingConversation) return
+                val result = (currentBoundAgent ?: agent).compactContext()
+                if (result != TurnStart.Started) sendEffect(HomeChatEffect.WorkspaceBusy)
+            }
+            is HomeChatIntent.RestoreFailedInput -> restoreFailedInput(intent)
             HomeChatIntent.Warmup -> agent.warmup()
             is HomeChatIntent.ImageAttached -> attachImage(intent.uri)
             is HomeChatIntent.ImageRemoved -> removeImage(intent.id)
@@ -178,6 +187,8 @@ class HomeChatViewModel internal constructor(
                 updateState {
                     copy(
                         boundConfigId = intent.id,
+                        contextUsage = null,
+                        contextProgress = null,
                         isConfigMenuVisible = false,
                     )
                 }
@@ -247,7 +258,7 @@ class HomeChatViewModel internal constructor(
         agentObserveJob = viewModelScope.launch {
             launch {
                 targetAgent.status.collect { status ->
-                    updateState { copy(isGenerating = status.isRunning) }
+                    updateState { copy(isGenerating = status.isRunning, isStopping = status is AgentState.Stopping) }
                 }
             }
             launch {
@@ -258,8 +269,18 @@ class HomeChatViewModel internal constructor(
                 }
             }
             launch {
+                var sequence = targetAgent.contextCompaction.value.sequence
+                targetAgent.contextCompaction.collect { state ->
+                    updateState { copy(contextCompaction = state) }
+                    if (state.sequence > sequence && state.manual && state.phase != ContextCompaction.Phase.Running) {
+                        sendEffect(HomeChatEffect.ContextNotice(state.phase))
+                    }
+                    sequence = state.sequence
+                }
+            }
+            launch {
                 targetAgent.contextUsage.collect { usage ->
-                    updateState { copy(contextProgress = usage?.progress) }
+                    updateState { copy(contextProgress = usage?.progress, contextUsage = usage) }
                 }
             }
             launch {
@@ -267,8 +288,17 @@ class HomeChatViewModel internal constructor(
                     if (!currentState.isLoadingConversation) {
                         val pendingImages = draft.images.mapNotNull { it.toHomeImage() }
                         val pendingFiles = draft.files.map { it.toHomeFile() }
+                        val restoredText = draft.text.takeIf { it.isNotEmpty() && currentState.input.isEmpty() }
                         updateState {
-                            copy(pendingImages = pendingImages, pendingFiles = pendingFiles)
+                            copy(
+                                input = restoredText ?: input,
+                                pendingImages = pendingImages,
+                                pendingFiles = pendingFiles,
+                            )
+                        }
+                        if (restoredText != null) {
+                            runCatchingCancellable { conversations.setDraftText(restoredText) }
+                                .onFailure { Logger.w(LOG_TAG, "restore draft persistence failed", it) }
                         }
                     }
                 }
@@ -648,6 +678,25 @@ class HomeChatViewModel internal constructor(
                 expandedActionSource = null,
             )
         }
+    }
+
+    private suspend fun restoreFailedInput(intent: HomeChatIntent.RestoreFailedInput) {
+        val target = agent
+        val conversation = target.conversation.value
+        if (currentState.isLoadingConversation || target.status.value.isRunning ||
+            conversation.id?.value != intent.conversationId || currentState.currentConversationId != intent.conversationId
+        ) return
+        val turn = conversation.turns.getOrNull(intent.turnId.toInt()) ?: return
+        if (turn.blocks.none { it is TurnBlock.Failure }) return
+        val draft = target.draft.value
+        if (currentState.input.isNotBlank() || draft.text.isNotBlank() || draft.images.isNotEmpty() || draft.files.isNotEmpty()) {
+            sendEffect(HomeChatEffect.RestoreDraftOccupied)
+            return
+        }
+        target.updateDraft {
+            it.copy(images = turn.images.map { attachment -> DraftImage.Ready(attachment) }, files = turn.files)
+        }
+        onInputChanged(turn.userText)
     }
 
     private suspend fun stopGenerating() {

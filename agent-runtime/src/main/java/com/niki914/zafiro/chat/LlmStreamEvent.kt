@@ -82,6 +82,7 @@ enum class LlmErrorCode {
     Overloaded,
     Transport,
     Parse,
+    ContextOverflow,
     RetryExhausted,
     HookFailed,
     ToolExecutionFailed,

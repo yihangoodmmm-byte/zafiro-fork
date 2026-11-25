@@ -13,6 +13,7 @@ import com.niki914.zafiro.repo.LlmConfigsDocument
 import com.niki914.zafiro.repo.ModelCatalog
 import com.niki914.zafiro.repo.ModelCatalogApi
 import com.niki914.zafiro.repo.ModelCatalogHttpException
+import com.niki914.zafiro.repo.ModelCatalogFormatException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
@@ -23,7 +24,6 @@ import com.niki914.zafiro.api.util.runCatchingCancellable
 import com.niki914.zafiro.api.util.tryIgnore
 import com.niki914.zafiro.settings.model.LlmProtocol
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -48,6 +48,9 @@ data class SavedConfigSummary(
     val modelId: String,
     val isActive: Boolean,
     val isRole: Boolean = false,
+    val providerGroupId: String = "",
+    val declaredWindow: Long? = null,
+    val declaredReply: Long? = null,
 )
 
 internal fun summariesOf(document: LlmConfigsDocument): List<SavedConfigSummary> {
@@ -59,6 +62,9 @@ internal fun summariesOf(document: LlmConfigsDocument): List<SavedConfigSummary>
                 id = config.id,
                 name = config.name.ifBlank { providerSpec.brandName },
                 providerBrandName = providerSpec.brandName,
+                providerGroupId = config.providerGroupId,
+                declaredWindow = TokenCountText.parse(config.contextWindowText)?.takeIf { it > 0 },
+                declaredReply = TokenCountText.parse(config.maxTokensText)?.takeIf { it > 0 },
                 modelId = config.model,
                 isActive = config.id == document.activeId,
                 isRole = config.isRole,
@@ -193,7 +199,7 @@ sealed interface ConfigureIntent {
     data object Save : ConfigureIntent
     data object ShowModelCatalogSheet : ConfigureIntent
     data object HideModelCatalogSheet : ConfigureIntent
-    data class SelectCatalogModel(val modelId: String) : ConfigureIntent
+    data class SelectCatalogModel(val modelIds: List<String>) : ConfigureIntent
 
     /** 确认端点不匹配弹窗：点击更新。 */
     data object ConfirmEndpointMismatch : ConfigureIntent
@@ -236,6 +242,7 @@ internal data class ConfigureViewModelDependencies(
     val saveModelFacts: suspend (endpoint: String, factsByModel: Map<String, CloudModelFacts>) -> Unit,
     val revisions: Flow<Long> = emptyFlow(),
     val createRole: suspend (String, String) -> Boolean = { _, _ -> false },
+    val saveProviderModels: (suspend (SavedLlmConfig, List<String>) -> Unit)? = null,
 ) {
     companion object {
         val Default = ConfigureViewModelDependencies(
@@ -250,6 +257,7 @@ internal data class ConfigureViewModelDependencies(
                 XRepo.cloudFacts.saveProviderFacts(endpoint, factsByModel)
             },
             revisions = XRepo.llmConfigs.revision,
+            saveProviderModels = { config, models -> XRepo.llmConfigs.saveProviderModels(config, models) },
             createRole = { id, name -> XRepo.llmConfigs.createRole(id, name) },
         )
     }
@@ -285,8 +293,6 @@ class ConfigureViewModel internal constructor(
     private companion object {
         private const val LOG_TAG = "niki914_zafiro_ConfigureViewModel"
 
-        /** 输入防抖：停手 50ms 才发； trailing + 取消在途 + 三元组去重。 */
-        private const val CATALOG_DEBOUNCE_MS = 50L
     }
 
     /** 已初始化过的入参；重进本页（返回上一页再回来）不重置已填内容。 */
@@ -294,9 +300,6 @@ class ConfigureViewModel internal constructor(
 
     /** 在途的目录拉取（防抖 + 可取消）。 */
     private var catalogFetchJob: Job? = null
-
-    /** 上次已拉取的三元组（endpoint/apiKey/protocol），去重用。 */
-    private var lastCatalogKey: CatalogKey? = null
 
     override suspend fun handleIntent(intent: ConfigureIntent) {
         when (intent) {
@@ -311,7 +314,7 @@ class ConfigureViewModel internal constructor(
 
             is ConfigureIntent.UpdateEndpoint -> updateState {
                 copy(endpointInput = intent.value, endpointErrorResId = null, inlineError = null)
-            }.also { scheduleCatalogFetch() }
+            }.also { resetCatalog() }
 
             is ConfigureIntent.UpdateModel -> updateState {
                 copy(modelInput = intent.value, modelErrorResId = null, inlineError = null)
@@ -319,7 +322,7 @@ class ConfigureViewModel internal constructor(
 
             is ConfigureIntent.UpdateApiKey -> updateState {
                 copy(apiKeyInput = intent.value, apiKeyErrorResId = null, inlineError = null)
-            }.also { scheduleCatalogFetch() }
+            }.also { resetCatalog() }
 
             is ConfigureIntent.SelectProtocol -> handleProtocolSwitch(intent.wireId)
 
@@ -368,17 +371,14 @@ class ConfigureViewModel internal constructor(
             ConfigureIntent.Save -> handleSave()
             ConfigureIntent.ConfirmEndpointMismatch -> confirmEndpointMismatch()
             ConfigureIntent.CancelEndpointMismatch -> cancelEndpointMismatch()
-            ConfigureIntent.ShowModelCatalogSheet -> updateState {
-                copy(showModelCatalogSheet = true)
-            }
+            ConfigureIntent.ShowModelCatalogSheet -> fetchCatalog()
 
-            ConfigureIntent.HideModelCatalogSheet -> updateState {
-                copy(showModelCatalogSheet = false)
-            }
+            ConfigureIntent.HideModelCatalogSheet -> resetCatalog()
 
             is ConfigureIntent.SelectCatalogModel -> updateState {
                 copy(
-                    modelInput = intent.modelId,
+                    modelInput = (modelInput.lineSequence().map(String::trim).filter(String::isNotEmpty).toList() +
+                        intent.modelIds.filter { it in modelCatalog }).distinct().joinToString("\n"),
                     modelErrorResId = null,
                     inlineError = null,
                     showModelCatalogSheet = false,
@@ -396,8 +396,6 @@ class ConfigureViewModel internal constructor(
         // 只认第一次，否则 onboarding 填好的草稿会被抹掉、保存时还会撞上重名校验。
         val key = Triple(scene, initialProviderId, configId)
         if (key == initializedKey) return
-        // 拉取三元组跨初始化重置：不同配置页实例互不污染
-        lastCatalogKey = null
         catalogFetchJob?.cancel()
         catalogFetchJob = null
         runCatchingCancellable {
@@ -416,8 +414,6 @@ class ConfigureViewModel internal constructor(
             }
             // 成功才登记：读取失败时重进本页仍可重试
             initializedKey = key
-            // 进页拉一次（Key 为空时内部短路，不发请求）
-            scheduleCatalogFetch(immediate = true)
         }.onFailure { throwable ->
             val message = throwable.message ?: throwable::class.java.simpleName
             Logger.w(LOG_TAG, "initialize failed scene=$scene reason=$message")
@@ -443,7 +439,7 @@ class ConfigureViewModel internal constructor(
                 providerSpec = providerSpec,
                 editingConfigId = null,
                 configNameInput = providerSpec.brandName,
-                endpointOverrideEnabled = false,
+                endpointOverrideEnabled = providerSpec == CustomApiSpec,
                 endpointInput = providerSpec.officialEndpoint,
                 // 个别 Provider 可提供稳定别名作为默认值；仍可在输入框中手动修改
                 modelInput = providerSpec.initialModelId.orEmpty(),
@@ -497,7 +493,7 @@ class ConfigureViewModel internal constructor(
                 editingConfigId = null,
                 // 默认名 = 品牌名（若重名则带编号），用户可改
                 configNameInput = defaultName,
-                endpointOverrideEnabled = false,
+                endpointOverrideEnabled = providerSpec == CustomApiSpec,
                 endpointInput = providerSpec.officialEndpoint,
                 // 个别 Provider 可提供稳定别名作为默认值；仍可在输入框中手动修改
                 modelInput = providerSpec.initialModelId.orEmpty(),
@@ -549,7 +545,9 @@ class ConfigureViewModel internal constructor(
                 configNameInput = target.name,
                 endpointOverrideEnabled = true,
                 endpointInput = target.endpoint.trim().ifBlank { providerSpec.officialEndpoint },
-                modelInput = target.model,
+                modelInput = if (target.isRole || target.providerGroupId.isBlank()) target.model else
+                    document.configs.filter { !it.isRole && it.providerGroupId == target.providerGroupId }
+                        .joinToString("\n") { it.model },
                 apiKeyInput = target.apiKey,
                 apiKeyVisible = false,
                 protocolWireId = LlmProtocol.fromWire(target.protocol).wireId,
@@ -581,60 +579,34 @@ class ConfigureViewModel internal constructor(
         }
     }
 
-    /** 模型目录自动拉取：50ms trailing + 取消在途 + 三元组去重 + 空值短路。
-     *  缓存语义：成功覆盖（含空结果，空 = 藏按钮）；失败与空值短路保留旧缓存，只记日志；
-     *  仅当 modelInput 为空时用首个结果回填（手填内容永不覆盖）。 */
-    private fun scheduleCatalogFetch(immediate: Boolean = false) {
+    private fun resetCatalog() {
         catalogFetchJob?.cancel()
-        updateState { copy(modelCatalogStatus = null) }
-        // 注意：handleIntent 已跑在 viewModelScope 的 intent 串行通道里；
-        // 这里起子协程只为防抖 delay 不阻塞后续 intent，取消语义经 job 传递
+        updateState { copy(modelCatalog = emptyList(), modelCatalogStatus = null, showModelCatalogSheet = false) }
+    }
+
+    private fun fetchCatalog() {
+        resetCatalog()
+        val state = currentState
+        val endpoint = state.resolvedEndpoint()
+        val protocol = LlmProtocol.fromWire(state.protocolWireId)
+        val modelsUrl = EndpointInference.modelsUrl(endpoint, protocol)
+        updateState { copy(showModelCatalogSheet = true, modelCatalogStatus = R.string.catalog_diagnostic_pending) }
+        if (modelsUrl == null) {
+            updateState { copy(modelCatalogStatus = R.string.catalog_diagnostic_unavailable) }
+            return
+        }
         catalogFetchJob = viewModelScope.launch {
-            if (!immediate) delay(CATALOG_DEBOUNCE_MS)
-            val state = currentState
-            val key = CatalogKey(
-                endpoint = state.endpointInput.trim(),
-                apiKey = state.apiKeyInput.trim(),
-                protocolWireId = state.protocolWireId,
-            )
-            if (key == lastCatalogKey) {
-                updateState { copy(modelCatalogStatus = R.string.catalog_diagnostic_ok) }
-                return@launch
-            }
-            // 空值短路：Key 或 endpoint 为空直接不发，保留旧缓存
-            if (key.endpoint.isBlank() || key.apiKey.isBlank()) return@launch
-            val protocol = LlmProtocol.fromWire(key.protocolWireId)
-            val modelsUrl = EndpointInference.modelsUrl(key.endpoint, protocol)
-                ?: return@launch
-            updateState { copy(modelCatalogStatus = R.string.catalog_diagnostic_pending) }
             runCatchingCancellable {
-                val catalog = dependencies.fetchModelCatalog(modelsUrl, key.apiKey, protocol)
-                // 云端事实随同一次响应落缓存：以 endpoint+model 为键，与「保存」解耦。
-                // 全缺字段（如 Google）时 facts 为空，不写，旧缓存保留。
+                val catalog = dependencies.fetchModelCatalog(modelsUrl, state.apiKeyInput.trim(), protocol)
                 if (catalog.facts.isNotEmpty()) {
-                    runCatchingCancellable {
-                        dependencies.saveModelFacts(key.endpoint, catalog.facts)
-                    }.onFailure { throwable ->
-                        Logger.w(LOG_TAG, "save model facts failed: ${throwable.message}")
-                    }
+                    runCatchingCancellable { dependencies.saveModelFacts(endpoint, catalog.facts) }
                 }
-                lastCatalogKey = key
-                val ids = catalog.ids
-                // 成功覆盖：空结果也写入（藏按钮），失败走 catch 保留旧缓存
                 updateState {
-                    // 没走 Provider 默认 model ID（编辑区为空）时，拉到的首个直接回填，免开选择单
-                    if (modelInput.isBlank() && ids.isNotEmpty()) {
-                        copy(
-                            modelCatalog = ids,
-                            modelCatalogStatus = R.string.catalog_diagnostic_ok,
-                            modelInput = ids.first(),
-                            modelErrorResId = null,
-                            inlineError = null,
-                            showModelCatalogSheet = false,
-                        )
-                    } else {
-                        copy(modelCatalog = ids, modelCatalogStatus = R.string.catalog_diagnostic_ok)
-                    }
+                    copy(
+                        modelCatalog = catalog.ids,
+                        modelCatalogStatus = if (catalog.ids.isEmpty()) R.string.catalog_diagnostic_empty
+                        else R.string.catalog_diagnostic_ok,
+                    )
                 }
             }.onFailure { throwable ->
                 val status = when (throwable) {
@@ -645,6 +617,7 @@ class ConfigureViewModel internal constructor(
                         in 500..599 -> R.string.catalog_diagnostic_server
                         else -> R.string.catalog_diagnostic_failed
                     }
+                    is ModelCatalogFormatException -> R.string.catalog_diagnostic_format
                     is SSLException -> R.string.catalog_diagnostic_tls
                     is SocketTimeoutException -> R.string.catalog_diagnostic_timeout
                     is UnknownHostException -> R.string.catalog_diagnostic_dns
@@ -654,12 +627,6 @@ class ConfigureViewModel internal constructor(
             }
         }
     }
-
-    private data class CatalogKey(
-        val endpoint: String,
-        val apiKey: String,
-        val protocolWireId: String,
-    )
 
     private fun setEndpointOverride(enabled: Boolean) {
         updateState {
@@ -675,7 +642,7 @@ class ConfigureViewModel internal constructor(
                 inlineError = null,
             )
         }
-        scheduleCatalogFetch()
+        resetCatalog()
     }
 
     private suspend fun activateConfig(configId: String) {
@@ -747,7 +714,7 @@ class ConfigureViewModel internal constructor(
                     protocolWireId = newProtocolWireId,
                 )
             }
-            scheduleCatalogFetch()
+            resetCatalog()
             return
         }
         updateState {
@@ -837,7 +804,7 @@ class ConfigureViewModel internal constructor(
 
     private fun switchProtocolQuietly(wireId: String) {
         updateState { copy(protocolWireId = wireId) }
-        scheduleCatalogFetch()
+        resetCatalog()
     }
 
     /** 校验重名与必填字段；不通过时置错误并发焦点 Effect。 */
@@ -846,8 +813,12 @@ class ConfigureViewModel internal constructor(
             return false
         }
         val trimmedName = currentState.configNameInput.trim()
-        val duplicateExists = dependencies.loadDocument().configs.any {
-            it.id != currentState.editingConfigId && it.name.trim() == trimmedName
+        val configs = dependencies.loadDocument().configs
+        val editing = configs.firstOrNull { it.id == currentState.editingConfigId }
+        val groupId = editing?.providerGroupId.orEmpty()
+        val duplicateExists = configs.any {
+            val sameGroup = groupId.isNotEmpty() && !it.isRole && it.providerGroupId == groupId
+            it.id != editing?.id && !sameGroup && it.name.trim() == trimmedName
         }
         if (duplicateExists) {
             updateState {
@@ -920,20 +891,20 @@ class ConfigureViewModel internal constructor(
         runCatchingCancellable {
             val current = currentState
             val targetConfigId = current.editingConfigId ?: newConfigId()
-            dependencies.upsertConfig(
-                current.toSavedLlmConfig().copy(id = targetConfigId)
-            )
+            val models = current.modelInput.lineSequence().map(String::trim).filter(String::isNotEmpty).distinct().toList()
+            val config = current.toSavedLlmConfig().copy(id = targetConfigId, model = models.first())
+            val saveProvider = dependencies.saveProviderModels
+            if (saveProvider != null && current.savedConfigs.none { it.id == targetConfigId && it.isRole }) {
+                saveProvider(config, models)
+            } else {
+                dependencies.upsertConfig(config)?.let { error(it) }
+            }
             val refreshed = dependencies.loadDocument()
             updateState {
                 val next = copy(
                     isSaving = false,
                     inlineError = null,
-                    // 新建保存自动置 active（repo 层行为）；编辑保存不动归属
-                    activeConfigId = if (current.editingConfigId == null) {
-                        targetConfigId
-                    } else {
-                        refreshed.activeId
-                    },
+                    activeConfigId = refreshed.activeId,
                     savedConfigs = summariesOf(refreshed),
                     editingConfigId = targetConfigId,
                 )

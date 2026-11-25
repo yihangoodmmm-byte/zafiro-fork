@@ -28,5 +28,6 @@ data class ActionUiModel(
     val body: ActionBodyUi,
     val onToggle: () -> Unit = {},
     @param:StringRes val stepCheckRes: Int? = null,
+    val isInterrupted: Boolean = false,
 )
 

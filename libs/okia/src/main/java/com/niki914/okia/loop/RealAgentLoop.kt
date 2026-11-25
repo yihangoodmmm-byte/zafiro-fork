@@ -28,6 +28,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -179,11 +181,14 @@ internal class RealAgentLoop : AgentLoop {
     private suspend fun runSegment(
         request: LoopRequest,
         onEvent: suspend (TurnEvent) -> Unit,
-        history: List<Message>
+        history: MutableList<Message>
     ): SegmentOutcome {
         val turnPolicy = request.options.turnRetryPolicy
         val turnMax = turnPolicy?.maxAttempts ?: 0
         var turnAttempt = 0
+        var overflowAttempt = false
+        var failedContextCost: Long? = null
+        var originalOverflow: LLMError? = null
 
         while (true) {
             // 每次段尝试独立 StreamState：重试丢弃上次尝试的 partial
@@ -193,6 +198,7 @@ internal class RealAgentLoop : AgentLoop {
             val segmentStartedAtMs = System.currentTimeMillis()
 
             // 1. Serialization 时机 + buildRequest（每段尝试 fresh request，对齐 pi）
+            var contextCost: Long? = null
             val httpRequest = try {
                 // G5 快照整改（§8.18）：工具描述每段尝试现取——快照表达「每段
                 // 发送时的工具集」而非 send 时固定值；合法变更（MCP 刷新 /
@@ -200,7 +206,8 @@ internal class RealAgentLoop : AgentLoop {
                 val serializationHolder = SerializationHolder(
                     request.snapshot.copy(
                         tools = request.toolRegistry.snapshot().map { it.descriptor }),
-                    history
+                    history,
+                    recoveringContextOverflow = overflowAttempt,
                 )
                 hookStep(request, onEvent, "beforeSerialization") {
                     it.beforeSerialization(serializationHolder)
@@ -214,6 +221,19 @@ internal class RealAgentLoop : AgentLoop {
                 hookStep(request, onEvent, "afterSerialization") {
                     it.afterSerialization(serializationHolder, built)
                 }?.let { return SegmentOutcome.Finished(it) }
+                contextCost = serializationHolder.contextCost
+                if (failedContextCost?.let { cost -> contextCost?.let { it >= cost } != false } == true) {
+                    return SegmentOutcome.Finished(fail(request, onEvent, state, checkNotNull(originalOverflow)))
+                }
+                currentCoroutineContext().ensureActive()
+                serializationHolder.contextCheckpoint?.let { checkpoint ->
+                    request.onCommit(listOf(checkpoint))
+                    history += checkpoint
+                    hookStep(request, onEvent, "afterContextCommit") {
+                        it.afterContextCommit(serializationHolder)
+                    }?.let { return SegmentOutcome.Finished(it) }
+                }
+                failedContextCost = null
                 built
             } catch (e: CancellationException) {
                 throw e
@@ -234,6 +254,12 @@ internal class RealAgentLoop : AgentLoop {
                     if (send.finalized) {
                         // hook 失败已 fail（TurnFailed 已发、partial 已 commit）
                         return SegmentOutcome.Finished(TurnResult.Failed(send.error))
+                    }
+                    if (send.error.code == LLMErrorCode.ContextOverflow && !overflowAttempt && contextCost != null) {
+                        overflowAttempt = true
+                        failedContextCost = contextCost
+                        originalOverflow = send.error
+                        continue
                     }
                     // 传输层耗尽 / 不可重试 → 回合层判断（嵌套 G6）
                     if (send.error.code.isRetryable && turnAttempt < turnMax) {
@@ -277,6 +303,14 @@ internal class RealAgentLoop : AgentLoop {
                             null,
                             true
                         )
+                        if (e.error.code == LLMErrorCode.ContextOverflow && !overflowAttempt &&
+                            contextCost != null && !state.hasAnyContent() && state.pendingToolCalls.isEmpty()
+                        ) {
+                            overflowAttempt = true
+                            failedContextCost = contextCost
+                            originalOverflow = e.error
+                            continue
+                        }
                         if (e.error.code.isRetryable && turnAttempt < turnMax) {
                             turnAttempt++
                             val delay = turnPolicy!!.delayMs(turnAttempt)
@@ -365,7 +399,7 @@ internal class RealAgentLoop : AgentLoop {
                 // 前置校验（T3）：2xx 才进 SSE 解析；非 2xx / HTML 不进 parseStream
                 when (resp) {
                     is StreamResponse.Error -> LLMError(
-                        code = classifyStatus(resp.statusCode),
+                        code = classifyStatus(resp.statusCode, resp.body),
                         message = resp.body.take(MAX_ERROR_BODY_CHARS)
                             .ifBlank { "HTTP ${resp.statusCode}" },
                         statusCode = resp.statusCode,
@@ -654,8 +688,12 @@ internal class RealAgentLoop : AgentLoop {
                 LLMError(
                     // retryable（协议层判定的临时错误，如 Anthropic overloaded_error）→
                     // Transport 可重试；其余（畸形 JSON 等）→ Parse 不可重试（问题 2）
-                    if (event.retryable) LLMErrorCode.Transport else LLMErrorCode.Parse,
-                    "stream parse error",
+                    when {
+                        event.retryable -> LLMErrorCode.Transport
+                        isContextOverflow(event.cause.message.orEmpty()) -> LLMErrorCode.ContextOverflow
+                        else -> LLMErrorCode.Parse
+                    },
+                    event.cause.message ?: "stream parse error",
                     event.cause
                 )
             )
@@ -954,7 +992,8 @@ internal class RealAgentLoop : AgentLoop {
     // G4 状态码 → 错误分类（约定俗成，对照 pi provider-retry / codex retry）：
     // 可重试 = 408/409/429/全部 5xx/网络；401/403 Auth、402 Quota、
     // 400 系 Parse 不可重试。503 语义 = Overloaded，其余 5xx = Transport。
-    private fun classifyStatus(status: Int): LLMErrorCode = when (status) {
+    private fun classifyStatus(status: Int, body: String): LLMErrorCode = when (status) {
+        400, 413, 422 -> if (isContextOverflow(body)) LLMErrorCode.ContextOverflow else LLMErrorCode.Parse
         401, 403 -> LLMErrorCode.Auth
         402 -> LLMErrorCode.Quota
         429 -> LLMErrorCode.RateLimit
@@ -962,6 +1001,13 @@ internal class RealAgentLoop : AgentLoop {
         408, 409 -> LLMErrorCode.Transport
         in 500..599 -> LLMErrorCode.Transport
         else -> LLMErrorCode.Parse // 400 系 / 3xx：客户端错误，不可重试
+    }
+
+    private fun isContextOverflow(body: String): Boolean {
+        val detail = body.take(MAX_ERROR_BODY_CHARS).lowercase()
+        return listOf("context_length_exceeded", "context_window_exceeded", "maximum context length",
+            "exceeds the context window", "prompt is too long", "input is too long for the model")
+            .any { it in detail }
     }
 
     // Retry-After 解析：retry-after-ms（毫秒）优先，retry-after（数字秒）次之。

@@ -5,6 +5,7 @@ import com.niki914.zafiro.api.model.Conversation
 import com.niki914.zafiro.api.model.ConversationTurn
 import com.niki914.zafiro.api.model.FileRef
 import com.niki914.zafiro.api.model.ToolInvocation
+import com.niki914.zafiro.api.model.TOOL_INTERRUPTED_REASON
 import com.niki914.zafiro.api.model.ToolOutcome
 import com.niki914.zafiro.api.model.TurnBlock
 import com.niki914.zafiro.api.model.TurnFailureCode
@@ -14,7 +15,7 @@ import com.niki914.zafiro.chat.LlmStreamEvent
 import com.niki914.zafiro.chat.ToolCallStatus
 
 /** 被掐断工具块的失败原因（沿用今天 UI 的字符串）。 */
-internal const val FAILED_REASON_INTERRUPTED = "Interrupted by user"
+internal const val FAILED_REASON_INTERRUPTED = TOOL_INTERRUPTED_REASON
 
 /**
  * 回合 id 规则：值等于该回合在装配列表里的位置。
@@ -387,6 +388,7 @@ internal object ConversationReducer {
         LlmErrorCode.Overloaded -> TurnFailureCode.Overloaded
         LlmErrorCode.Transport -> TurnFailureCode.Transport
         LlmErrorCode.Parse -> TurnFailureCode.Parse
+        LlmErrorCode.ContextOverflow -> TurnFailureCode.ContextOverflow
         LlmErrorCode.RetryExhausted -> TurnFailureCode.RetryExhausted
         LlmErrorCode.HookFailed -> TurnFailureCode.HookFailed
         LlmErrorCode.ToolExecutionFailed -> TurnFailureCode.ToolExecutionFailed

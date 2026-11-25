@@ -14,6 +14,7 @@ import com.niki914.zafiro.app.ui.chat.helper.ZafiroToast
 import com.niki914.zafiro.app.ui.chat.helper.honestCopyToClipboard
 import com.niki914.zafiro.app.ui.chat.mapper.toTurnUiModel
 import com.niki914.zafiro.app.ui.model.home.ActionSource
+import com.niki914.zafiro.app.ui.model.home.HomeChatBlock
 import com.niki914.zafiro.app.ui.model.home.HomeChatTurn
 import com.niki914.zafiro.app.ui.model.home.MessageActionsDisplay
 import kotlinx.coroutines.launch
@@ -36,7 +37,7 @@ internal fun HomeChatTurnItem(
     onRewind: (Long) -> Unit,
     onReadAloud: (() -> Unit)? = null,
     isReadingAloud: Boolean = false,
-    onStopExecution: (() -> Unit)? = null,
+    onRestoreFailedInput: (() -> Unit)? = null,
     expandedActionTurnId: Long?,
     expandedActionSource: ActionSource?,
     activeThinkingKey: String? = null,
@@ -124,7 +125,10 @@ internal fun HomeChatTurnItem(
         branchIndex = branchIndex,
         branchCount = branchCount,
         isTurnActive = isLastTurn && isGenerating,
-        onStopExecution = onStopExecution,
+        onRestoreFailedInput = onRestoreFailedInput?.takeIf {
+            !isGenerating && turn.blocks.any { it is HomeChatBlock.Error } &&
+                (turn.userText.isNotBlank() || turn.images.isNotEmpty() || turn.files.isNotEmpty())
+        },
         onSwitchBranch = onSwitchBranch,
         modifier = modifier,
     )

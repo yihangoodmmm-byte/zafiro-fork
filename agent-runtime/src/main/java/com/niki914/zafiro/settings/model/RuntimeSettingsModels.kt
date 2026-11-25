@@ -42,6 +42,7 @@ data class RuntimeLlmConfig(
     val repetitionSensitivity: RepetitionSensitivity = RepetitionSensitivity.DEFAULT,
     /** 上下文自动压缩阈值百分比（例如 70 表示 70%，0 表示关闭）。 */
     val compactionThresholdPercent: Int = 70,
+    val contextWindowSource: String = "default",
 )
 
 enum class RuntimeAgentMemoryMode {

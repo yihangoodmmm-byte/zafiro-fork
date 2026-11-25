@@ -130,6 +130,7 @@ fun SavedConfigDetailContent(
             visible = uiState.showModelCatalogSheet,
             catalog = uiState.modelCatalog,
             currentModelInput = uiState.modelInput,
+            status = uiState.modelCatalogStatus,
             onDismissRequest = { viewModel.sendIntent(ConfigureIntent.HideModelCatalogSheet) },
             onSelect = { viewModel.sendIntent(ConfigureIntent.SelectCatalogModel(it)) },
         )
@@ -172,7 +173,7 @@ private fun SavedConfigDetailContentBody(
     onSave: () -> Unit,
     onShowModelCatalogSheet: () -> Unit = {},
     onHideModelCatalogSheet: () -> Unit = {},
-    onSelectCatalogModel: (String) -> Unit = {},
+    onSelectCatalogModel: (List<String>) -> Unit = {},
 ) {
     // 编辑态不限制端点编辑；新建态仅部分品牌开放自定义端点
     val policy = if (!showEndpointOverrideToggle) {

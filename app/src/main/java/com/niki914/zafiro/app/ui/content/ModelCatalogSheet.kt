@@ -1,6 +1,8 @@
 package com.niki914.zafiro.app.ui.content
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,8 +25,7 @@ import com.niki914.zafiro.app.R
 
 /**
  * 模型目录选择单（id-only）。
- * - 搜索框（header 槽）+ 名单；点一行即选中回填并收起；背景点击关闭；
- * - 选中态：单内字符串 == 输入框 trim。
+ * 搜索和勾选不改表单；确认后才采纳勾选的模型。
  */
 @Composable
 fun ModelCatalogSheet(
@@ -32,12 +33,14 @@ fun ModelCatalogSheet(
     catalog: List<String>,
     currentModelInput: String,
     onDismissRequest: () -> Unit,
-    onSelect: (String) -> Unit,
+    onSelect: (List<String>) -> Unit,
+    status: Int? = null,
 ) {
     // 提前返回是有意的：query 随组合一起销毁，关单再开时搜索框是干净的（原行为）。
     if (!visible) return
     var query by rememberSaveable { mutableStateOf("") }
-    val trimmedCurrent = currentModelInput.trim()
+    var selected by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
+    val existing = currentModelInput.lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
     val filtered = rememberFilteredCatalog(catalog, query)
     val screenH = LocalConfiguration.current.screenHeightDp.dp
 
@@ -61,24 +64,36 @@ fun ModelCatalogSheet(
                     .padding(horizontal = 24.dp, vertical = 8.dp),
             )
         },
-    ) { dismissThen ->
-        if (filtered.isEmpty()) {
-            Text(
-                text = stringResource(R.string.ui_onboard_configure_model_catalog_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-            )
-        } else {
-            LazyColumn {
-                items(filtered, key = { it.hashCode() }) { modelId ->
-                    OptionRow(
-                        title = modelId,
-                        checked = modelId == trimmedCurrent,
-                        onClick = { dismissThen { onSelect(modelId) } },
-                    )
+    ) { _ ->
+        Column {
+            if (filtered.isEmpty()) {
+                Text(
+                    text = stringResource(status?.takeIf { catalog.isEmpty() }
+                        ?: R.string.ui_onboard_configure_model_catalog_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f).padding(horizontal = 24.dp, vertical = 12.dp),
+                )
+            } else {
+                LazyColumn(Modifier.weight(1f)) {
+                    items(filtered, key = { it }) { modelId ->
+                        OptionRow(
+                            title = modelId,
+                            checked = modelId in existing || modelId in selected,
+                            onClick = {
+                                if (modelId !in existing) selected = ArrayList(
+                                    if (modelId in selected) selected - modelId else selected + modelId,
+                                )
+                            },
+                        )
+                    }
                 }
             }
+            TextButton(
+                onClick = { onSelect(selected.toList()) },
+                enabled = selected.isNotEmpty(),
+                modifier = Modifier.padding(horizontal = 24.dp),
+            ) { Text(stringResource(R.string.catalog_adopt_models)) }
         }
     }
 }

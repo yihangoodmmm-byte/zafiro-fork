@@ -26,6 +26,9 @@ interface Hooks {
     // 消息序列化后（拿到 Provider 请求）
     suspend fun afterSerialization(request: SerializationHolder, httpRequest: HttpRequest) {}
 
+    /** Invoked only after a context checkpoint has committed to this active turn. */
+    suspend fun afterContextCommit(request: SerializationHolder) {}
+
     // 模型流式请求发送前（http 层兜底脱敏 / 改写）。只覆盖 loop 经
     // HttpEngine.stream 的模型请求路径；unary（MCP 等其他网络请求）不触发。
     suspend fun beforeRequest(request: HttpRequestHolder) {}

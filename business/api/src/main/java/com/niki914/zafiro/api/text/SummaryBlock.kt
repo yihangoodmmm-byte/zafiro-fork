@@ -47,6 +47,9 @@ object SummaryBlock {
     data class Payload(
         val keepTurns: Int,
         val summary: String,
+        val coveredMessages: Int? = null,
+        val tokensBefore: Long? = null,
+        val tokensAfter: Long? = null,
     )
 
     /**
@@ -55,7 +58,11 @@ object SummaryBlock {
     fun block(payload: Payload): String {
         require(payload.keepTurns >= 0) { "keepTurns must be non-negative: ${payload.keepTurns}" }
         val body = buildString {
-            append(PREFIX_KEEP_TURNS).append(' ').append(payload.keepTurns).append("\n\n")
+            append(PREFIX_KEEP_TURNS).append(' ').append(payload.keepTurns).append('\n')
+            payload.coveredMessages?.let { append("covered-messages: ").append(it).append('\n') }
+            payload.tokensBefore?.let { append("tokens-before: ").append(it).append('\n') }
+            payload.tokensAfter?.let { append("tokens-after: ").append(it).append('\n') }
+            append('\n')
             append(PROMPT_INTRO).append('\n')
             append(TAG_SUMMARY_OPEN).append('\n')
             append(payload.summary.trim())
@@ -78,7 +85,15 @@ object SummaryBlock {
         if (startSummary == -1 || endSummary == -1 || endSummary <= startSummary) return null
 
         val summary = lines.subList(startSummary + 1, endSummary).joinToString("\n").trim()
-        return Payload(keepTurns = keepTurns, summary = summary)
+        fun metadata(key: String) = lines.take(startSummary)
+            .firstOrNull { it.startsWith(key) }?.removePrefix(key)?.trim()
+        return Payload(
+            keepTurns = keepTurns,
+            summary = summary,
+            coveredMessages = metadata("covered-messages:")?.toIntOrNull()?.takeIf { it > 0 },
+            tokensBefore = metadata("tokens-before:")?.toLongOrNull(),
+            tokensAfter = metadata("tokens-after:")?.toLongOrNull(),
+        )
     }
 
     /** [strip] 的结果：干净的用户文本 + 解回来的压缩载荷。 */

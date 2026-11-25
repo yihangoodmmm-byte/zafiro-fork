@@ -85,6 +85,7 @@ enum class TurnFailureCode {
     Overloaded,
     Transport,
     Parse,
+    ContextOverflow,
 
     /** 重试耗尽，配合 [TurnBlock.Failure.attempts] 显示已尝试次数。 */
     RetryExhausted,

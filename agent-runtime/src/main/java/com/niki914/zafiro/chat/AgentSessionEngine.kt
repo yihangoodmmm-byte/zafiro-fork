@@ -7,16 +7,20 @@ import com.niki914.okia.conversation.SessionSnapshot
 import com.niki914.okia.error.RetryPolicy
 import com.niki914.okia.message.ContentBlock
 import com.niki914.okia.message.Message
+import com.niki914.okia.hooks.SerializationHolder
 import com.niki914.okia.message.ThinkingLevel
 import com.niki914.okia.message.contextTokens
 import com.niki914.okia.tooling.ToolRegistry
 import com.niki914.zafiro.api.AgentControl
+import com.niki914.zafiro.api.model.ContextCompaction
 import com.niki914.zafiro.api.model.ChatTurnOptions
 import com.niki914.zafiro.api.model.FileRef
 import com.niki914.zafiro.api.model.WorkspaceDirectory
 import com.niki914.zafiro.platform.browser.BrowserService
 import com.niki914.zafiro.service.findService
 import com.niki914.zafiro.chat.compaction.Compactor
+import com.niki914.zafiro.chat.compaction.ContextPruner
+import com.niki914.zafiro.chat.compaction.RequestContextBudget
 import com.niki914.zafiro.chat.agentic.ChatTurnPrompt
 import com.niki914.zafiro.chat.agentic.IngestedImage
 import com.niki914.zafiro.chat.prompt.PromptComposeContext
@@ -32,6 +36,8 @@ import com.niki914.zafiro.settings.model.DEFAULT_CONTEXT_WINDOW_TOKENS
 import com.niki914.zafiro.settings.model.LlmProtocol
 import com.niki914.zafiro.settings.model.RuntimeLlmConfig
 import com.niki914.zafiro.api.util.runCatchingCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +99,8 @@ class AgentSessionEngine {
         toolRegistry = toolSynchronizer.toolRegistry,
         imageLoader = imageManager.imageLoader,
         ensureImageSaver = imageManager::ensureImageSaver,
+        prepareContext = ::prepareRequestContext,
+        contextCommitted = ::contextCommitted,
     )
     internal val streamPipeline = LlmStreamPipeline()
 
@@ -134,6 +142,7 @@ class AgentSessionEngine {
 
     fun bindConfig(configId: String) {
         boundConfigId = configId
+        contextRevision.value += 1
     }
 
     internal fun resetForTest() {
@@ -144,11 +153,107 @@ class AgentSessionEngine {
         prefixComposer.reset()
         contextWindowFlow.value = DEFAULT_CONTEXT_WINDOW_TOKENS
         boundConfigId = ""
+        contextRevision.value += 1
         compactor = Compactor(
             summaryGenerator = { systemPrompt, userPrompt ->
                 generateSummary(systemPrompt, userPrompt)
             }
         )
+    }
+
+
+    private val contextCompactionFlow = MutableStateFlow(ContextCompaction())
+    val contextCompaction: StateFlow<ContextCompaction> = contextCompactionFlow.asStateFlow()
+
+    private fun publishCompaction(
+        phase: ContextCompaction.Phase,
+        before: Long? = null,
+        after: Long? = null,
+        manual: Boolean = false,
+    ) {
+        contextCompactionFlow.value = ContextCompaction(
+            sequence = contextCompactionFlow.value.sequence + 1,
+            phase = phase,
+            beforeTokens = before,
+            afterTokens = after,
+            manual = manual,
+        )
+    }
+
+    private fun contextCommitted(request: SerializationHolder) {
+        val payload = request.contextCheckpoint?.let(ContextPruner::payloadOf) ?: return
+        publishCompaction(ContextCompaction.Phase.Compacted, payload.tokensBefore, payload.tokensAfter)
+        contextRevision.value += 1
+    }
+
+    private suspend fun generateCompactionSummary(system: String, prompt: String): String = try {
+        generateSummary(system, prompt).also {
+            if (it.isBlank()) publishCompaction(ContextCompaction.Phase.Failed, manual = contextCompaction.value.manual)
+        }
+    } catch (cancelled: CancellationException) {
+        publishCompaction(ContextCompaction.Phase.Cancelled, manual = contextCompaction.value.manual)
+        throw cancelled
+    } catch (failure: Exception) {
+        publishCompaction(ContextCompaction.Phase.Failed, manual = contextCompaction.value.manual)
+        throw failure
+    }
+
+    private suspend fun prepareRequestContext(request: SerializationHolder) {
+        val raw = request.originalHistory
+        val snapshot = request.snapshot
+        val window = contextWindowFlow.value
+        fun measure(messages: List<Message>) = RequestContextBudget.count(snapshot.systemPrompt, snapshot.tools, messages)
+        val ratio = compactor.thresholdRatio
+        val threshold = minOf((window * ratio).toLong(), window - snapshot.maxTokens - 512L)
+        var messages = request.history
+        var cost = measure(messages)
+        val before = cost
+        var checkpoint: Message.User? = null
+        if (request.recoveringContextOverflow || ratio > 0f && threshold > 0 && cost >= threshold) {
+            val limit = if (request.recoveringContextOverflow) 400 else 2400
+            messages = RequestContextBudget.pruneTools(messages, limit, includeLatest = request.recoveringContextOverflow)
+            cost = measure(messages)
+            if (request.recoveringContextOverflow || cost >= threshold) {
+                publishCompaction(ContextCompaction.Phase.Running, before = before)
+                val candidate = compactor.prepare(raw, window, snapshot.maxTokens, generate = ::generateCompactionSummary)
+                if (candidate != null) {
+                    val projected = RequestContextBudget.pruneTools(
+                        ContextPruner.prune(raw + candidate).messages,
+                        limit,
+                        includeLatest = request.recoveringContextOverflow,
+                    )
+                    val candidateCost = measure(projected)
+                    if (candidateCost < cost) {
+                        checkpoint = candidate
+                        messages = projected
+                        cost = candidateCost
+                    }
+                }
+            }
+        }
+        if (checkpoint == null && cost < before) {
+            publishCompaction(ContextCompaction.Phase.Pruned, before = before, after = cost)
+        } else if (checkpoint == null && contextCompaction.value.phase == ContextCompaction.Phase.Running) {
+            publishCompaction(ContextCompaction.Phase.Unchanged, before = before, after = cost)
+        }
+        request.write(snapshot, messages, "context_budget")
+        request.recordContext(cost, checkpoint)
+    }
+
+    private val contextRevision = MutableStateFlow(0L)
+    val contextChanges = contextRevision.asStateFlow()
+    val contextReplyTokens: Int? get() = runtimeState?.snapshot?.config?.maxTokens
+    val contextConfigId: String? get() = runtimeState?.configId
+    val contextWindowSource: String? get() = runtimeState?.contextWindowSource
+
+    fun estimateContext(draft: String, attachments: Int): Long? {
+        val state = runtimeState?.takeIf { it.configId == boundConfigId } ?: return null
+        val config = state.snapshot.config
+        val raw = okia?.conversation?.value?.history?.map { it.message }.orEmpty()
+        val messages = ContextPruner.prune(raw).messages
+        val tools = toolRegistry.snapshot().map { it.descriptor }
+        return RequestContextBudget.count(config.finalSystemPrompt, tools, messages) +
+            RequestContextBudget.text(draft) + 1024L * attachments
     }
 
     private val refreshMutex = Mutex()
@@ -291,7 +396,9 @@ class AgentSessionEngine {
                 snapshot = snapshot,
                 okia = activeSession,
                 sessionProtocol = protocol,
+                contextWindowSource = llmConfig.contextWindowSource,
             )
+            contextRevision.value += 1
             Logger.i(
                 LOG_TAG,
                 "refresh done elapsedMs=${System.currentTimeMillis() - refreshStartedAtMs} " +
@@ -402,16 +509,6 @@ class AgentSessionEngine {
                 query
             }
 
-            val currentSession = state.okia
-            val contextTokens = contextTokensOf(currentSession.conversation.value) ?: 0L
-            val contextWindow = contextWindowTokens.value
-            compactor.compact(
-                session = currentSession,
-                force = false,
-                contextTokens = contextTokens,
-                contextWindow = contextWindow,
-            )
-
             activeWorkspacePath = workspace
             val planDescriptor = WorkflowPlanTool.descriptor
             val plan = if (options.workflowEnabled && toolRegistry.find(planDescriptor.wireName) == null) {
@@ -505,22 +602,36 @@ class AgentSessionEngine {
         imageManager.ingestUserImage(uriString)
 
     suspend fun compact(force: Boolean = false): Boolean {
-        val session = okia ?: run {
-            refresh()
-            okia
-        } ?: return false
-        val state = runtimeState ?: run {
-            refresh()
-            runtimeState
-        } ?: return false
-        val contextTokens = contextTokensOf(session.conversation.value) ?: 0L
-        val contextWindow = contextWindowTokens.value
-        return compactor.compact(
-            session = session,
-            force = force,
-            contextTokens = contextTokens,
-            contextWindow = contextWindow,
-        )
+        if (!executionMutex.tryLock()) return false
+        publishCompaction(ContextCompaction.Phase.Running, manual = true)
+        try {
+            if (runtimeState?.configId != boundConfigId || okia == null) refresh()
+            val session = okia ?: return false
+            val history = session.conversation.value.history.map { it.message }
+            val used = ContextPruner.prune(history).messages.sumOf(RequestContextBudget::message)
+            if (!force && !Compactor.shouldCompact(used, contextWindowFlow.value, compactor.thresholdRatio)) return false
+            val candidate = compactor.prepare(
+                history, contextWindowFlow.value, contextReplyTokens ?: 4096,
+                generate = ::generateCompactionSummary,
+            ) ?: return false
+            currentCoroutineContext().ensureActive()
+            session.append(candidate)
+            val payload = ContextPruner.payloadOf(candidate)
+            publishCompaction(ContextCompaction.Phase.Compacted, payload?.tokensBefore, payload?.tokensAfter, manual = true)
+            contextRevision.value += 1
+            return true
+        } catch (cancelled: CancellationException) {
+            publishCompaction(ContextCompaction.Phase.Cancelled, manual = true)
+            throw cancelled
+        } catch (failure: Exception) {
+            publishCompaction(ContextCompaction.Phase.Failed, manual = true)
+            throw failure
+        } finally {
+            if (contextCompaction.value.phase == ContextCompaction.Phase.Running) {
+                publishCompaction(ContextCompaction.Phase.Unchanged, manual = true)
+            }
+            executionMutex.unlock()
+        }
     }
 
     private suspend fun generateSummary(systemPrompt: String, userPrompt: String): String {
@@ -552,6 +663,7 @@ class AgentSessionEngine {
         val snapshot: LlmRuntimeSnapshot,
         val okia: Okia,
         val sessionProtocol: LlmProtocol?,
+        val contextWindowSource: String,
     )
 }
 

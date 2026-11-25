@@ -1,6 +1,9 @@
 package com.niki914.zafiro.app.ui.content.composer
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,7 +32,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +57,7 @@ fun LiquidChatComposer(
     isGenerating: Boolean,
     modifier: Modifier = Modifier,
     contextProgress: Float? = null,
+    onContextClick: (() -> Unit)? = null,
     pendingImages: List<HomeChatImage> = emptyList(),
     pendingFiles: List<HomeChatFile> = emptyList(),
     onAttachImageClick: () -> Unit = {},
@@ -65,6 +71,10 @@ fun LiquidChatComposer(
     reasoningEffortLabel: String? = null,
     reasoningEffortShortLabel: String? = null,
     onReasoningEffortClick: () -> Unit = {},
+    isStopping: Boolean = false,
+    modelLabel: String? = null,
+    onModelClick: () -> Unit = {},
+    inputModifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
     val workspaceTitle = stringResource(R.string.ui_home_workspace_title)
@@ -88,84 +98,120 @@ fun LiquidChatComposer(
         else -> colors.onSurfaceVariant
     }
 
-    // Fixed action row: typing and IME changes do not move the send/stop target.
-    LiquidTextField(
-        value = value,
-        onValueChange = onValueChange,
-        placeholder = stringResource(R.string.ui_home_input_placeholder),
-        singleLine = false,
-        maxLines = 5,
-        contentVerticalAlignment = Alignment.Top,
-        minHeight = 100.dp,
-        expandedLayout = true,
-        expandedActionsRow = {
-            IconButton(onClick = onAttachImageClick, modifier = Modifier.size(ControlSize)) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_home_attach_sheet_title))
-            }
+    val activityLabel = when {
+        isStopping -> stringResource(R.string.chat_composer_stopping)
+        isGenerating -> stringResource(R.string.chat_composer_working)
+        else -> null
+    }
+    Column(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(
-                onClick = onWorkspaceClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { stateDescription = workspaceState },
-                contentPadding = PaddingValues(horizontal = 2.dp),
+                onClick = onModelClick,
+                enabled = !isGenerating && sendAvailable,
+                modifier = Modifier.weight(1f),
             ) {
-                Icon(Icons.Default.Folder, contentDescription = workspaceTitle, modifier = Modifier.size(18.dp))
                 Text(
-                    text = workspaceLabel,
-                    modifier = Modifier.padding(start = 4.dp),
+                    text = modelLabel?.let { stringResource(R.string.chat_composer_model, it) }
+                        ?: stringResource(R.string.chat_composer_setup_model),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(18.dp))
             }
-            IconButton(onClick = onTaskOptionsClick, modifier = Modifier.size(ControlSize)) {
-                Icon(
-                    Icons.Default.Tune,
-                    contentDescription = taskOptionsTitle,
-                    tint = if (taskOptionsActive) colors.primary else colors.onSurfaceVariant,
-                )
-            }
-            if (reasoningEffortLabel != null) {
-                val title = stringResource(R.string.ui_home_reasoning_effort)
-                IconButton(
-                    onClick = onReasoningEffortClick,
-                    modifier = Modifier.size(ControlSize).semantics {
-                        contentDescription = title
-                        stateDescription = reasoningEffortLabel
-                    },
-                ) {
-                    if (reasoningEffortShortLabel == null) Icon(Icons.Default.Psychology, contentDescription = null)
-                    else Text(reasoningEffortShortLabel, color = colors.primary, maxLines = 1,
+            onContextClick?.let { open ->
+                val label = stringResource(R.string.chat_context_title)
+                TextButton(onClick = open, modifier = Modifier.semantics { contentDescription = label }) {
+                    Text(contextProgress?.let { "${(it * 100).toInt()}%" } ?: label,
                         style = MaterialTheme.typography.labelSmall)
                 }
             }
-            FilledIconButton(
-                onClick = if (isGenerating) onStopClick else onSendClick,
-                enabled = isGenerating || canSend,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = if (isGenerating) colors.error else colors.primary,
-                    contentColor = if (isGenerating) colors.onError else colors.onPrimary,
-                ),
-                modifier = Modifier.size(ControlSize).drawWithContent {
-                    drawContent()
-                    if (contextProgress != null && contextProgress.isFinite()) {
-                        drawContextRing(contextProgress, ringColor)
-                    }
-                },
-            ) {
-                if (isGenerating) {
-                    Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.ui_home_stop_action))
-                } else {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow_up),
-                        contentDescription = stringResource(R.string.ui_home_send_action),
+            if (activityLabel != null) {
+                Text(
+                    text = activityLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        }
+        LiquidTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = stringResource(R.string.ui_home_input_placeholder),
+            singleLine = false,
+            maxLines = 5,
+            contentVerticalAlignment = Alignment.Top,
+            minHeight = 100.dp,
+            expandedLayout = true,
+            expandedActionsRow = {
+                IconButton(onClick = onAttachImageClick, modifier = Modifier.size(ControlSize)) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_home_attach_sheet_title))
+                }
+                TextButton(
+                    onClick = onWorkspaceClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { stateDescription = workspaceState },
+                    contentPadding = PaddingValues(horizontal = 2.dp),
+                ) {
+                    Icon(Icons.Default.Folder, contentDescription = workspaceTitle, modifier = Modifier.size(18.dp))
+                    Text(
+                        text = workspaceLabel,
+                        modifier = Modifier.padding(start = 4.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-        },
-        backdrop = backdrop,
-        glassStyle = LiquidGlassPresets.ComposerBar,
-        modifier = modifier.fillMaxWidth(),
-    )
+                IconButton(onClick = onTaskOptionsClick, modifier = Modifier.size(ControlSize)) {
+                    Icon(
+                        Icons.Default.Tune,
+                        contentDescription = taskOptionsTitle,
+                        tint = if (taskOptionsActive) colors.primary else colors.onSurfaceVariant,
+                    )
+                }
+                if (reasoningEffortLabel != null) {
+                    val title = stringResource(R.string.ui_home_reasoning_effort)
+                    IconButton(
+                        onClick = onReasoningEffortClick,
+                        modifier = Modifier.size(ControlSize).semantics {
+                            contentDescription = title
+                            stateDescription = reasoningEffortLabel
+                        },
+                    ) {
+                        if (reasoningEffortShortLabel == null) Icon(Icons.Default.Psychology, contentDescription = null)
+                        else Text(reasoningEffortShortLabel, color = colors.primary, maxLines = 1,
+                            style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                FilledIconButton(
+                    onClick = if (isGenerating) onStopClick else onSendClick,
+                    enabled = !isStopping && (isGenerating || canSend),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = if (isGenerating) colors.error else colors.primary,
+                        contentColor = if (isGenerating) colors.onError else colors.onPrimary,
+                    ),
+                    modifier = Modifier.size(ControlSize).drawWithContent {
+                        drawContent()
+                        if (contextProgress != null && contextProgress.isFinite()) {
+                            drawContextRing(contextProgress, ringColor)
+                        }
+                    },
+                ) {
+                    if (isGenerating) {
+                        Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.ui_home_stop_action))
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_up),
+                            contentDescription = stringResource(R.string.ui_home_send_action),
+                        )
+                    }
+                }
+            },
+            backdrop = backdrop,
+            glassStyle = LiquidGlassPresets.ComposerBar,
+            modifier = inputModifier.fillMaxWidth(),
+        )
+    }
 }
 
 private fun DrawScope.drawContextRing(progress: Float, color: Color) {

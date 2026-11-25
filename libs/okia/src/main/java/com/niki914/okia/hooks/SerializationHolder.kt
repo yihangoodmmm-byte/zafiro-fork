@@ -13,8 +13,11 @@ import com.niki914.okia.protocol.RequestSnapshot
  */
 class SerializationHolder(
     initialSnapshot: RequestSnapshot,
-    initialHistory: List<Message>
+    initialHistory: List<Message>,
+    val recoveringContextOverflow: Boolean = false
 ) {
+
+    val originalHistory: List<Message> = initialHistory
 
     // 当前请求输入快照（write 后为改写值）；private set 保持只读暴露
     var snapshot: RequestSnapshot = initialSnapshot
@@ -27,6 +30,17 @@ class SerializationHolder(
     // 最后写入者签名（write 记录）；未写入为 null
     var lastWriter: String? = null
         private set
+
+    var contextCheckpoint: Message? = null
+        private set
+
+    var contextCost: Long? = null
+        private set
+
+    fun recordContext(cost: Long, checkpoint: Message? = null) {
+        contextCost = cost
+        contextCheckpoint = checkpoint
+    }
 
     // 改写请求输入并记录签名（一次性，发完即弃，不写回会话树）
     fun write(

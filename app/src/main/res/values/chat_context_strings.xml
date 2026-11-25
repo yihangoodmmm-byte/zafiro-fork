@@ -1,0 +1,22 @@
+<resources>
+    <string name="chat_context_title">上下文</string>
+    <string name="chat_context_unknown">暂无估算</string>
+    <string name="chat_context_usage">预计 %1$d / %2$d tokens</string>
+    <string name="chat_context_reply">预留回复：%1$d tokens</string>
+    <string name="chat_context_compact">立即压缩</string>
+    <string name="chat_context_window">模型窗口：%1$d tokens</string>
+    <string name="chat_context_source_user">窗口来源：手动配置</string>
+    <string name="chat_context_source_provider">窗口来源：服务商目录</string>
+    <string name="chat_context_source_catalog">窗口来源：OpenRouter</string>
+    <string name="chat_context_source_default">窗口来源：默认估算</string>
+    <string name="chat_context_overflow">超出模型上下文</string>
+    <string name="chat_context_overflow_help">缩短输入、减少附件，或切换到上下文窗口更大的模型。</string>
+    <string name="chat_context_running">正在压缩上下文…</string>
+    <string name="chat_context_done">上下文已压缩，原始消息仍可回看</string>
+    <string name="chat_context_pruned">已缩短发送给模型的旧工具结果</string>
+    <string name="chat_context_unchanged">没有可安全压缩的历史，或摘要未能缩小上下文</string>
+    <string name="chat_context_failed">压缩失败，原始上下文保持不变</string>
+    <string name="chat_context_cancelled">压缩已取消</string>
+    <string name="chat_context_reduction">约 %1$d → %2$d tokens</string>
+    <string name="chat_context_estimate_note">用量为本地估算；图片按预算占位，实际用量以服务商为准。</string>
+</resources>

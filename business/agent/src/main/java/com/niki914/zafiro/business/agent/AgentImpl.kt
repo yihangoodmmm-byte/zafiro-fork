@@ -22,6 +22,7 @@ import com.niki914.zafiro.api.model.TurnOutcome
 import com.niki914.zafiro.api.model.isRunning
 import com.niki914.zafiro.business.agent.AgentImpl.Companion.STATUS_TEXT_THROTTLE_MS
 import com.niki914.zafiro.chat.AgentSessionEngine
+import com.niki914.zafiro.chat.LlmErrorCode
 import com.niki914.zafiro.chat.LlmStreamEvent
 import com.niki914.zafiro.service.findService
 import com.niki914.zafiro.service.requireService
@@ -92,15 +93,12 @@ class AgentImpl(
     override val conversation: StateFlow<Conversation> = conversationFlow.asStateFlow()
     override val draft: StateFlow<Draft> = draftFlow.asStateFlow()
 
-    /**
-     * 分子取 [conversation]（回合结束/载入/重置都会改它），分母取引擎当前生效配置的窗口。
-     * 两者任一变化即重算，不需要在 [stream]/[load]/[bindConfig]/[discard] 里各自记账，
-     * 也不会漏掉 [clearForTest]。
-     */
+    override val contextCompaction = engine.contextCompaction
+
     override val contextUsage: StateFlow<ContextUsage?> =
-        combine(conversationFlow, engine.contextWindowTokens) { conversation, windowTokens ->
-            conversation.contextTokens?.let { usedTokens ->
-                ContextUsage(usedTokens = usedTokens, windowTokens = windowTokens)
+        combine(engine.currentConversation, engine.contextWindowTokens, draftFlow, engine.contextChanges) { _, window, draft, _ ->
+            engine.estimateContext(draft.text, draft.images.size + draft.files.size)?.let { used ->
+                ContextUsage(used, window, engine.contextReplyTokens, engine.contextConfigId, engine.contextWindowSource)
             }
         }.stateIn(scope, SharingStarted.Eagerly, null)
 
@@ -146,6 +144,9 @@ class AgentImpl(
         }
     }
 
+    override fun compactContext(): TurnStart =
+        startTurn(Draft(text = "/compact"), ChatTurnOptions(), consumeDraft = false, manualCompact = true)
+
     override fun stream(): TurnStart = stream(ChatTurnOptions())
 
     override fun stream(options: ChatTurnOptions): TurnStart =
@@ -164,6 +165,7 @@ class AgentImpl(
         draft: Draft,
         options: ChatTurnOptions,
         consumeDraft: Boolean,
+        manualCompact: Boolean = false,
         canStart: () -> Boolean = { true },
     ): TurnStart {
         if (draft.text.isBlank() && draft.images.isEmpty() && draft.files.isEmpty()) {
@@ -177,12 +179,12 @@ class AgentImpl(
         }
 
         val query = draft.text
-        val isCompactCommand = consumeDraft && draft.images.isEmpty() &&
+        val isCompactCommand = manualCompact || consumeDraft && draft.images.isEmpty() &&
                 draft.files.isEmpty() &&
                 query.trim().equals("/compact", ignoreCase = true)
 
         if (isCompactCommand) {
-            draftFlow.value = Draft()
+            if (consumeDraft) draftFlow.value = Draft()
             val token = ++roundToken
             reducedStatus = AgentStateReducer.startRound()
             emitStatus(reducedStatus.status)
@@ -191,7 +193,6 @@ class AgentImpl(
             streamJob = scope.launch {
                 try {
                     runCatchingCancellable {
-                        ensureConversation(query)
                         val compacted = engine.compact(force = true)
                         if (compacted) {
                             foldWith(ConversationReducer.markCompacted(conversationFlow.value))
@@ -243,6 +244,9 @@ class AgentImpl(
                     )
                     engine.stream(query = query, images = contentImages, files = files, options = options)
                         .collect { event ->
+                            if (event is LlmStreamEvent.Error && event.code == LlmErrorCode.ContextOverflow && consumeDraft) {
+                                draftFlow.compareAndSet(Draft(), draft)
+                            }
                             fold(event)
                         }
                 }.onFailure { throwable ->

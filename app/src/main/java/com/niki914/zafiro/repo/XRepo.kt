@@ -856,6 +856,7 @@ class LlmConfigsApi internal constructor(
                 createdAt = createdAt,
                 updatedAt = nowMillis,
                 isRole = existing?.isRole ?: config.isRole,
+                providerGroupId = existing?.providerGroupId ?: config.providerGroupId,
             )
             val exists = existing != null
             val updatedConfigs = if (exists) {
@@ -880,6 +881,47 @@ class LlmConfigsApi internal constructor(
         return null
     }
 
+    internal suspend fun saveProviderModels(config: SavedLlmConfig, models: List<String>) {
+        require(models.isNotEmpty())
+        val now = System.currentTimeMillis()
+        repo.updateJson(StoreDescriptorRegistry.LLM_CONFIGS_ID) { json ->
+            val doc = LlmConfigsSettingsCodec.parse(json)
+            val existing = doc.configs.firstOrNull { it.id == config.id }
+            val groupId = existing?.providerGroupId?.takeIf(String::isNotBlank) ?: config.id
+            val members = doc.configs.filter {
+                it.id == config.id || (!it.isRole && it.providerGroupId == groupId && existing?.isRole != true)
+            }
+            val byModel = members.associateBy { it.model }
+            val existingIds = members.map { it.id }.toSet()
+            val retained = (models + members.map { it.model }.filter(String::isNotBlank)).distinct()
+                .mapIndexed { index, model ->
+                    val old = byModel[model]
+                    val template = if (old == null || old.id == config.id) config else old
+                    template.copy(
+                        id = old?.id ?: if (existing == null && index == 0) config.id else newConfigId(),
+                        name = config.name.trim().ifBlank { config.provider },
+                        provider = config.provider,
+                        endpoint = config.endpoint.trim(),
+                        apiKey = config.apiKey,
+                        protocol = config.protocol.trim().lowercase(),
+                        proxy = config.proxy.trim(),
+                        model = model,
+                        isRole = existing?.isRole == true,
+                        providerGroupId = if (existing?.isRole == true) "" else groupId,
+                        createdAt = old?.createdAt?.takeIf { it > 0L } ?: now,
+                        updatedAt = now,
+                    )
+                }
+            val retainedById = retained.associateBy { it.id }
+            val configs = doc.configs.map { row ->
+                retainedById[row.id] ?: row
+            } + retained.filterNot { it.id in existingIds }
+            val activeId = doc.activeId?.takeIf { id -> configs.any { it.id == id } } ?: retained.first().id
+            LlmConfigsSettingsCodec.encode(doc.copy(configs = configs, activeId = activeId))
+        }
+        bumpRevision()
+    }
+
     internal suspend fun createRole(sourceId: String, name: String): Boolean {
         val roleName = name.trim()
         if (roleName.isEmpty() || roleName.length > 80) return false
@@ -888,7 +930,7 @@ class LlmConfigsApi internal constructor(
             val source = doc.configs.firstOrNull { it.id == sourceId } ?: return@updateJsonOrFalse null
             if (doc.configs.any { it.name.equals(roleName, ignoreCase = true) }) return@updateJsonOrFalse null
             val now = System.currentTimeMillis()
-            val role = source.copy(id = newConfigId(), name = roleName, isRole = true, createdAt = now, updatedAt = now)
+            val role = source.copy(id = newConfigId(), name = roleName, isRole = true, providerGroupId = "", createdAt = now, updatedAt = now)
             LlmConfigsSettingsCodec.encode(doc.copy(configs = doc.configs + role))
         }
         if (created) bumpRevision()

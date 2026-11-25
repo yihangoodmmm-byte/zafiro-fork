@@ -30,6 +30,9 @@ data class ToolInvocation(
     val argumentsJson: String? = null,
 )
 
+/** Failure marker shared by the stop reducer and the tool timeline. */
+const val TOOL_INTERRUPTED_REASON = "Interrupted by user"
+
 /**
  * 工具结果。
  *

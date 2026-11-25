@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.niki914.zafiro.app.R
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +72,7 @@ internal fun TurnItem(
     onSwitchBranch: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
     isTurnActive: Boolean = false,
-    onStopExecution: (() -> Unit)? = null,
+    onRestoreFailedInput: (() -> Unit)? = null,
 ) {
     val alwaysVisible = actionsDisplay == MessageActionsDisplay.Always
 
@@ -145,7 +149,6 @@ internal fun TurnItem(
                 ToolTimeline(
                     actions = turn.sections.filterIsInstance<TurnSection.ToolRun>().flatMap { it.actions },
                     active = isTurnActive,
-                    onStop = onStopExecution,
                 )
                 SectionList(
                     sections = turn.sections,
@@ -156,6 +159,12 @@ internal fun TurnItem(
                         }
                     },
                 )
+
+                if (onRestoreFailedInput != null) {
+                    TextButton(onClick = onRestoreFailedInput) {
+                        Text(stringResource(R.string.chat_restore_failed_input))
+                    }
+                }
 
                 // 助手操作栏：严格遵守完成态护栏（生成中绝不露出）
                 AnimatedVisibility(
